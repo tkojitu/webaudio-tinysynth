@@ -440,200 +440,214 @@ function WebAudioTinySynthCore(target) {
 
     ],
     /*@@gui*/
-    _guiInit:()=>{
-      if(this.canvas){
-        this.ctx=this.canvas.getContext("2d");
-        this.ctx.fillStyle="#000";
-        this.ctx.fillRect(0,0,300,32);
-        this.canvas.addEventListener("dragover",this.dragOver.bind(this),false);
-        this.canvas.addEventListener("dragleave",this.dragLeave.bind(this),false);
-        this.canvas.addEventListener("drop",this.execDrop.bind(this),false);
-        this.canvas.addEventListener("click",this.click.bind(this),false);
-        this.canvas.addEventListener("mousedown",this.pointerdown.bind(this),false);
-        this.canvas.addEventListener("mousemove",this.pointermove.bind(this),false);
-        this.canvas.addEventListener("touchstart",this.pointerdown.bind(this),false);
-        this.canvas.addEventListener("touchend",this.pointerup.bind(this),false);
-        this.canvas.addEventListener("touchcancel",this.pointerup.bind(this),false);
-        this.canvas.addEventListener("touchmove",this.pointermove.bind(this),false);
+    _guiInit: ()=>{
+      if (this.canvas) {
+        this.ctx = this.canvas.getContext("2d");
+        this.ctx.fillStyle = "#000";
+        this.ctx.fillRect(0, 0, 300, 32);
+        this.canvas.addEventListener("dragover", this.dragOver.bind(this), false);
+        this.canvas.addEventListener("dragleave", this.dragLeave.bind(this), false);
+        this.canvas.addEventListener("drop", this.execDrop.bind(this), false);
+        this.canvas.addEventListener("click", this.click.bind(this), false);
+        this.canvas.addEventListener("mousedown", this.pointerdown.bind(this), false);
+        this.canvas.addEventListener("mousemove", this.pointermove.bind(this), false);
+        this.canvas.addEventListener("touchstart", this.pointerdown.bind(this), false);
+        this.canvas.addEventListener("touchend", this.pointerup.bind(this), false);
+        this.canvas.addEventListener("touchcancel", this.pointerup.bind(this), false);
+        this.canvas.addEventListener("touchmove", this.pointermove.bind(this), false);
       }
     },
-    _guiUpdate:()=>{
-      if(this.canvas){
-        this.ctx.fillStyle="#000";
-        this.ctx.fillRect(0,0,300,32);
-        var row1=8,row2=20;
-        if(this.song)
-          row1=4,row2=24;
-        else {
-          this.ctx.fillStyle="#fff";
-          this.ctx.fillText("TinySynth",8,20);
+    _guiUpdate: ()=>{
+      if (this.canvas) {
+        this.ctx.fillStyle = "#000";
+        this.ctx.fillRect(0, 0, 300, 32);
+        var row1 = 8;
+        var row2 = 20;
+        if (this.song) {
+          row1 = 4;
+          row2 = 24;
+        } else {
+          this.ctx.fillStyle = "#fff";
+          this.ctx.fillText("TinySynth", 8, 20);
         }
-        if(this.graph){
-          this.ctx.fillStyle="#800";
-          this.ctx.fillRect(80,row1,132,4);
-          this.ctx.fillRect(80,row2,132,4);
-          this.ctx.fillStyle="#f00";
-          for(let i=this.notetab.length-1;i>=0;--i){
-            const nt=this.notetab[i];
-            if(!nt.f || this.rhythm[nt.ch]){
-              this.ctx.fillRect(80+nt.n,row1,4,4);
-              this.ctx.fillRect(80+nt.ch*8,row2,6,4);
+        if (this.graph) {
+          this.ctx.fillStyle = "#800";
+          this.ctx.fillRect(80, row1, 132, 4);
+          this.ctx.fillRect(80, row2, 132, 4);
+          this.ctx.fillStyle = "#f00";
+          for (let i = this.notetab.length - 1; i >= 0; --i) {
+            const nt = this.notetab[i];
+            if (!nt.f || this.rhythm[nt.ch]) {
+              this.ctx.fillRect(80 + nt.n, row1, 4, 4);
+              this.ctx.fillRect(80 + nt.ch * 8, row2, 6, 4);
             }
           }
         }
-        if(this.perfmon){
-          this.ctx.fillStyle="#fff";
-          this.ctx.fillRect(180,30,28,-12);
-          this.ctx.fillStyle="#000";
-          this.ctx.fillText(this.notetab.length,185,28);
+        if (this.perfmon) {
+          this.ctx.fillStyle = "#fff";
+          this.ctx.fillRect(180, 30, 28, -12);
+          this.ctx.fillStyle = "#000";
+          this.ctx.fillText(this.notetab.length, 185, 28);
         }
-        this.ctx.fillStyle="#fff";
-        this.ctx.fillRect(250,15,32,2);
-        this.ctx.fillStyle="#fff";
-        this.ctx.strokeStyle="#000";
+        this.ctx.fillStyle = "#fff";
+        this.ctx.fillRect(250, 15, 32, 2);
+        this.ctx.fillStyle = "#fff";
+        this.ctx.strokeStyle = "#000";
         this.ctx.beginPath();
-        this.ctx.arc(250+this.masterVol*32,16,6,0,6.28,0);
-        this.ctx.moveTo(220,12); this.ctx.lineTo(224,12); this.ctx.lineTo(230,6);
-        this.ctx.lineTo(230,26); this.ctx.lineTo(224,20); this.ctx.lineTo(220,20);
+        this.ctx.arc(250 + this.masterVol * 32, 16, 6, 0, 6.28, 0);
+        this.ctx.moveTo(220, 12);
+        this.ctx.lineTo(224, 12);
+        this.ctx.lineTo(230, 6);
+        this.ctx.lineTo(230, 26);
+        this.ctx.lineTo(224, 20);
+        this.ctx.lineTo(220, 20);
         this.ctx.fill();
         this.ctx.stroke();
-        this.ctx.strokeStyle="#fff";
-        this.ctx.lineWidth=2;
+        this.ctx.strokeStyle = "#fff";
+        this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        this.ctx.arc(230,16,4,-1,1,false);
+        this.ctx.arc(230, 16, 4, -1, 1, false);
         this.ctx.stroke();
         this.ctx.beginPath();
-        this.ctx.arc(230,16,8,-1,1,false);
+        this.ctx.arc(230, 16, 8, -1, 1, false);
         this.ctx.stroke();
-        if(this.masterVol==0){
-          this.ctx.strokeStyle="#000";
-          this.ctx.lineWidth=4;
+        if (this.masterVol == 0) {
+          this.ctx.strokeStyle = "#000";
+          this.ctx.lineWidth = 4;
           this.ctx.beginPath();
-          this.ctx.moveTo(220,7);
-          this.ctx.lineTo(238,25);
+          this.ctx.moveTo(220, 7);
+          this.ctx.lineTo(238, 25);
           this.ctx.stroke();
-          this.ctx.strokeStyle="#fff";
-          this.ctx.lineWidth=2;
+          this.ctx.strokeStyle = "#fff";
+          this.ctx.lineWidth = 2;
           this.ctx.stroke();
         }
-        if(this.song){
-          this.ctx.fillStyle="#fff";
-          this.ctx.fillRect(4,2,28,28);
-          this.ctx.fillRect(80,15,128,2);
-          this.ctx.fillStyle="#000";
-          if(this.playing){
-            this.ctx.fillRect(12,10,4,12);
-            this.ctx.fillRect(22,10,4,12);
+        if (this.song) {
+          this.ctx.fillStyle = "#fff";
+          this.ctx.fillRect(4, 2, 28, 28);
+          this.ctx.fillRect(80, 15, 128, 2);
+          this.ctx.fillStyle = "#000";
+          if (this.playing) {
+            this.ctx.fillRect(12, 10, 4, 12);
+            this.ctx.fillRect(22, 10, 4, 12);
           }
-          else{
+          else {
             this.ctx.beginPath();
-            this.ctx.moveTo(12,9);
-            this.ctx.lineTo(25,16);
-            this.ctx.lineTo(12,23);
+            this.ctx.moveTo(12, 9);
+            this.ctx.lineTo(25, 16);
+            this.ctx.lineTo(12, 23);
             this.ctx.fill();
           }
-          this.ctx.fillStyle="#fff"
-          this.ctx.fillText(this.toTime(this.playTick),38,14);
-          this.ctx.fillText(this.toTime(this.maxTick),38,28);
-          this.ctx.strokeStyle="#000";
+          this.ctx.fillStyle = "#fff"
+          this.ctx.fillText(this.toTime(this.playTick), 38, 14);
+          this.ctx.fillText(this.toTime(this.maxTick), 38, 28);
+          this.ctx.strokeStyle = "#000";
           this.ctx.beginPath();
-          this.ctx.arc(80+this.playTick/this.maxTick*128,16,6,0,6.28,0);
+          this.ctx.arc(80 + this.playTick / this.maxTick * 128, 16, 6, 0, 6.28, 0);
           this.ctx.fill();
           this.ctx.stroke();
         }
-        if(this.waitdrop){
-          this.ctx.fillStyle="rgba(0,0,0,0.7)"
-          this.ctx.fillRect(0,0,300,32);
-          this.ctx.fillStyle="#fff";
-          this.ctx.fillText("Drop MIDI File Here",100,20);
+        if (this.waitdrop) {
+          this.ctx.fillStyle = "rgba(0,0,0,0.7)"
+          this.ctx.fillRect(0, 0, 300, 32);
+          this.ctx.fillStyle = "#fff";
+          this.ctx.fillText("Drop MIDI File Here", 100, 20);
         }
       }
     },
-    toTime:(ti)=>{
-      ti=(ti*4*60/this.song.timebase/this.song.tempo)|0;
-      const m=(ti/60)|0;
-      const s=ti%60;
-      return ("00"+m).substr(-2)+":"+("00"+s).substr(-2);
+    toTime: (ti)=>{
+      ti = (ti * 4 * 60 / this.song.timebase / this.song.tempo) | 0;
+      const m = (ti / 60) | 0;
+      const s = ti % 60;
+      return ("00" + m).substr(-2) + ":" + ("00" + s).substr(-2);
     },
-    preventScroll:(e)=>{
+    preventScroll: (e)=>{
       e.preventDefault();
     },
-    pointerup:(ev)=>{
-      document.body.removeEventListener('touchstart',this.preventScroll,false);
+    pointerup: (ev)=>{
+      document.body.removeEventListener('touchstart', this.preventScroll, false);
     },
-    getPos:(e)=>{
-      var p=e.target.getBoundingClientRect();
-      if(p.right!=p.left)
-        return {x:(e.clientX-p.left)*300/(p.right-p.left),y:e.clientY-p.top};
-      return {x:0,y:0};
+    getPos: (e)=>{
+      var p = e.target.getBoundingClientRect();
+      if (p.right != p.left)
+        return {
+          x: (e.clientX - p.left) * 300 / (p.right - p.left),
+          y: e.clientY - p.top
+        };
+      return {
+        x: 0,
+        y: 0
+      };
     },
-    pointerdown:(ev)=>{
-      let e=ev;
-      if(ev.touches)
-        e=ev.touches[0];
-      this.downpos=this.getPos(e);
-      if(ev.touches || (e.buttons&1)){
-        if(this.song&&this.downpos.x>=80&&this.downpos.x<=208){
-          const p=(this.downpos.x-80)/128*this.maxTick;
+    pointerdown: (ev)=>{
+      let e = ev;
+      if (ev.touches)
+        e = ev.touches[0];
+      this.downpos = this.getPos(e);
+      if (ev.touches || (e.buttons & 1)) {
+        if (this.song && this.downpos.x >= 80 && this.downpos.x <= 208) {
+          const p = (this.downpos.x - 80) / 128 * this.maxTick;
           this.locateMIDI(p);
-          document.body.addEventListener('touchstart',this.preventScroll,false);
+          document.body.addEventListener('touchstart', this.preventScroll, false);
         }
-        if(this.downpos.x>=250&&this.downpos.x<282){
-          const p=(this.downpos.x-250)/32;
+        if (this.downpos.x >= 250 && this.downpos.x < 282) {
+          const p = (this.downpos.x - 250) / 32;
           this.setMasterVol(p);
-          document.body.addEventListener('touchstart',this.preventScroll,false);
+          document.body.addEventListener('touchstart', this.preventScroll, false);
         }
       }
     },
-    pointermove:(ev)=>{
-      let e=ev;
-      if(ev.touches)
-        e=ev.touches[0];
-      if(ev.touches || (e.buttons&1)){
-        const pos=this.getPos(e);
-        if(this.song&&pos.x>=70&&pos.x<=208){
-          if(pos.x<80) pos.x=80;
-          const p=(pos.x-80)/128*this.maxTick;
+    pointermove: (ev)=>{
+      let e = ev;
+      if (ev.touches)
+        e = ev.touches[0];
+      if (ev.touches || (e.buttons & 1)) {
+        const pos = this.getPos(e);
+        if (this.song && pos.x >= 70 && pos.x <= 208) {
+          if (pos.x < 80)
+            pos.x = 80;
+          const p = (pos.x - 80) / 128 * this.maxTick;
           this.locateMIDI(p);
         }
-        if(pos.x>=250&&pos.x<282){
-          const p=(pos.x-250)/32;
+        if (pos.x >= 250 && pos.x < 282) {
+          const p = (pos.x - 250) / 32;
           this.setMasterVol(p);
         }
       }
     },
-    click:(e)=>{
-      const pos=this.getPos(e);
-      if(pos.x<40 && this.song){
-        if(this.playing)
+    click: (e)=>{
+      const pos = this.getPos(e);
+      if (pos.x < 40 && this.song) {
+        if (this.playing)
           this.stopMIDI();
-        else if(this.song)
+        else if (this.song)
           this.playMIDI();
       }
-      if(pos.x>=215&&pos.x<243 && this.downpos.x>=215 && this.downpos.x<243){
-        if(this.masterVol>0){
-          this.lastMasterVol=this.masterVol;
-          this.masterVol=0;
+      if (pos.x >= 215 && pos.x < 243 && this.downpos.x >= 215 && this.downpos.x < 243) {
+        if (this.masterVol > 0) {
+          this.lastMasterVol = this.masterVol;
+          this.masterVol = 0;
         }
-        else
-          this.masterVol=this.lastMasterVol;
+        else {
+          this.masterVol = this.lastMasterVol;
+        }
       }
     },
-    dragLeave:(e)=>{
-      this.waitdrop=0;
+    dragLeave: (e)=>{
+      this.waitdrop = 0;
     },
-    dragOver:(e)=>{
-      this.waitdrop=1;
+    dragOver: (e)=>{
+      this.waitdrop = 1;
       e.stopPropagation();
       e.preventDefault();
       e.dataTransfer.dropEffect = "copy";
     },
-    execDrop:(e)=>{
-      this.waitdrop=0;
+    execDrop: (e)=>{
+      this.waitdrop = 0;
       const f = e.dataTransfer.files;
-      if(this.disabledrop==0){
+      if (this.disabledrop == 0) {
         var reader = new FileReader();
-        reader.onload=function(e){
+        reader.onload = function(e) {
           this.loadMIDI(reader.result);
         }.bind(this);
         reader.readAsArrayBuffer(f[0]);
@@ -642,213 +656,254 @@ function WebAudioTinySynthCore(target) {
       e.preventDefault();
     },
     /*@@guiEND*/
-    ready:()=>{
+    ready: ()=>{
       return new Promise((resolv)=>{
-        const timerid=setInterval(()=>{
-//          console.log("Initialize checking.");
-          if(this.isReady){
+        const timerid = setInterval(()=>{
+          if (this.isReady) {
             clearInterval(timerid);
             console.log("Initialized");
             resolv();
           }
-        },100);
+        }, 100);
       });
     },
-    init:()=>{
-      this.pg=[]; this.vol=[]; this.ex=[]; this.bend=[]; this.rpnidx=[]; this.brange=[];
-      this.sustain=[]; this.notetab=[]; this.rhythm=[];
-      this.masterTuningC=0; this.masterTuningF=0; this.tuningC=[]; this.tuningF=[];
-      this.maxTick=0, this.playTick=0, this.playing=0; this.releaseRatio=3.5;
-      for(let i=0;i<16;++i){
-        this.pg[i]=0; this.vol[i]=3*100*100/(127*127);
-        this.bend[i]=0; this.brange[i]=0x100;
-        this.tuningC[i]=0; this.tuningF[i]=0;
-        this.rhythm[i]=0;
+    init: ()=>{
+      this.pg = [];
+      this.vol = [];
+      this.ex = [];
+      this.bend = [];
+      this.rpnidx = [];
+      this.brange = [];
+      this.sustain = [];
+      this.notetab = [];
+      this.rhythm = [];
+      this.masterTuningC = 0;
+      this.masterTuningF = 0;
+      this.tuningC = [];
+      this.tuningF = [];
+      this.maxTick = 0;
+      this.playTick = 0;
+      this.playing = 0;
+      this.releaseRatio = 3.5;
+      for (let i = 0; i < 16; ++i) {
+        this.pg[i] = 0;
+        this.vol[i] = 3 * 100 * 100 / (127 * 127);
+        this.bend[i] = 0;
+        this.brange[i] = 0x100;
+        this.tuningC[i] = 0;
+        this.tuningF[i] = 0;
+        this.rhythm[i] = 0;
       }
-      this.rhythm[9]=1;
-      this.preroll=0.2;
-      this.relcnt=0;
+      this.rhythm[9] = 1;
+      this.preroll = 0.2;
+      this.relcnt = 0;
       setInterval(
-        function(){
-          if(++this.relcnt>=3){
-            this.relcnt=0;
-            for(let i=this.notetab.length-1;i>=0;--i){
-              var nt=this.notetab[i];
-              if(this.actx.currentTime>nt.e){
+        function() {
+          if (++this.relcnt >= 3) {
+            this.relcnt = 0;
+            for(let i = this.notetab.length - 1; i >= 0; --i) {
+              var nt = this.notetab[i];
+              if (this.actx.currentTime > nt.e) {
                 this._pruneNote(nt);
-                this.notetab.splice(i,1);
+                this.notetab.splice(i, 1);
               }
             }
             /*@@gui*/
             /*@@guiEND*/
           }
-          if(this.playing && this.song.ev.length>0){
-            let e=this.song.ev[this.playIndex];
-            while(this.actx.currentTime+this.preroll>this.playTime){
-              if(e.m[0]==0xff51){
-                this.song.tempo=e.m[1];
-                this.tick2Time=4*60/this.song.tempo/this.song.timebase;
+          if (this.playing && this.song.ev.length > 0) {
+            let e = this.song.ev[this.playIndex];
+            while (this.actx.currentTime + this.preroll > this.playTime) {
+              if (e.m[0] == 0xff51) {
+                this.song.tempo = e.m[1];
+                this.tick2Time = 4 * 60 / this.song.tempo / this.song.timebase;
               }
-              else
-                this.send(e.m,this.playTime);
+              else {
+                this.send(e.m, this.playTime);
+              }
               ++this.playIndex;
-              if(this.playIndex>=this.song.ev.length){
-                if(this.loop){
-                  e=this.song.ev[this.playIndex=0];
-                  this.playTick=e.t;
+              if (this.playIndex >= this.song.ev.length) {
+                if (this.loop) {
+                  e = this.song.ev[this.playIndex = 0];
+                  this.playTick = e.t;
                 }
-                else{
-                  this.playTick=this.maxTick;
-                  this.playing=0;
+                else {
+                  this.playTick = this.maxTick;
+                  this.playing = 0;
                   break;
                 }
               }
-              else{
-                e=this.song.ev[this.playIndex];
-                this.playTime+=(e.t-this.playTick)*this.tick2Time;
-                this.playTick=e.t;
+              else {
+                e = this.song.ev[this.playIndex];
+                this.playTime += (e.t - this.playTick) * this.tick2Time;
+                this.playTick = e.t;
               }
             }
           }
-        }.bind(this),60
+        }.bind(this), 60
       );
-      console.log("internalcontext:"+this.internalcontext)
-      if(this.internalcontext){
+      console.log("internalcontext:" + this.internalcontext)
+      if (this.internalcontext) {
         window.AudioContext = window.AudioContext || window.webkitAudioContext;
         this.setAudioContext(new AudioContext());
       }
-      this.isReady=1;
+      this.isReady = 1;
     },
-    setMasterVol:(v)=>{
-      if(v!=undefined)
-        this.masterVol=v;
-      if(this.out)
-        this.out.gain.value=this.masterVol;
+    setMasterVol: (v)=>{
+      if (v != undefined)
+        this.masterVol = v;
+      if (this.out)
+        this.out.gain.value = this.masterVol;
     },
-    setReverbLev:(v)=>{
-      if(v!=undefined)
-        this.reverbLev=v;
-      var r=parseFloat(this.reverbLev);
-      if(this.rev&&!isNaN(r))
-        this.rev.gain.value=r*8;
+    setReverbLev: (v)=>{
+      if (v != undefined)
+        this.reverbLev = v;
+      var r = parseFloat(this.reverbLev);
+      if (this.rev && !isNaN(r))
+        this.rev.gain.value = r * 8;
     },
-    setLoop:(f)=>{
-      this.loop=f;
+    setLoop: (f)=>{
+      this.loop = f;
     },
-    setVoices:(v)=>{
-      this.voices=v;
+    setVoices: (v)=>{
+      this.voices = v;
     },
-    getPlayStatus:()=>{
-      return {play:this.playing, maxTick:this.maxTick, curTick:this.playTick};
+    getPlayStatus: ()=>{
+      return {
+        play: this.playing,
+        maxTick: this.maxTick,
+        curTick: this.playTick
+      };
     },
-    locateMIDI:(tick)=>{
-      let i,p=this.playing;
+    locateMIDI: (tick)=>{
+      let i;
+      let p = this.playing;
       this.stopMIDI();
-      for(i=0;i<this.song.ev.length && tick>this.song.ev[i].t;++i){
-        var m=this.song.ev[i];
-        var ch=m.m[0]&0xf;
-        switch(m.m[0]&0xf0){
+      for (i = 0; i < this.song.ev.length && tick > this.song.ev[i].t; ++i) {
+        var m = this.song.ev[i];
+        var ch = m.m[0] & 0xf;
+        switch (m.m[0] & 0xf0) {
         case 0xb0:
-          switch(m.m[1]){
-          case 1:  this.setModulation(ch,m.m[2]); break;
-          case 7:  this.setChVol(ch,m.m[2]); break;
-          case 10: this.setPan(ch,m.m[2]); break;
-          case 11: this.setExpression(ch,m.m[2]); break;
-          case 64: this.setSustain(ch,m.m[2]); break;
+          switch (m.m[1]) {
+          case 1:
+            this.setModulation(ch, m.m[2]);
+            break;
+          case 7:
+            this.setChVol(ch, m.m[2]);
+            break;
+          case 10:
+            this.setPan(ch, m.m[2]);
+            break;
+          case 11:
+            this.setExpression(ch, m.m[2]);
+            break;
+          case 64:
+            this.setSustain(ch, m.m[2]);
+            break;
           }
           break;
-        case 0xc0: this.pg[m.m[0]&0x0f]=m.m[1]; break;
+        case 0xc0:
+          this.pg[m.m[0]&0x0f] = m.m[1];
+          break;
         }
-        if(m.m[0]==0xff51)
-          this.song.tempo=m.m[1];
+        if (m.m[0] == 0xff51)
+          this.song.tempo = m.m[1];
       }
-      if(!this.song.ev[i]){
-        this.playIndex=0;
-        this.playTick=this.maxTick;
+      if (!this.song.ev[i]) {
+        this.playIndex = 0;
+        this.playTick = this.maxTick;
       }
-      else{
-        this.playIndex=i;
-        this.playTick=this.song.ev[i].t;
+      else {
+        this.playIndex = i;
+        this.playTick = this.song.ev[i].t;
       }
-      if(p)
+      if (p)
         this.playMIDI();
     },
-    getTimbreName:(m,n)=>{
-      if(m==0)
+    getTimbreName: (m,n)=>{
+      if (m == 0)
         return this.program[n].name;
       else
-        return this.drummap[n-35].name;
+        return this.drummap[n - 35].name;
     },
-    loadMIDIfromSrc:()=>{
+    loadMIDIfromSrc: ()=>{
       this.loadMIDIUrl(this.src);
     },
-    loadMIDIUrl:(url)=>{
-      if(!url)
+    loadMIDIUrl: (url)=>{
+      if (!url)
         return;
-      var xhr=new XMLHttpRequest();
-      xhr.open("GET",url,true);
-      xhr.responseType="arraybuffer";
-      xhr.loadMIDI=this.loadMIDI.bind(this);
-      xhr.onload=function(e){
-        if(this.status==200){
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", url, true);
+      xhr.responseType = "arraybuffer";
+      xhr.loadMIDI = this.loadMIDI.bind(this);
+      xhr.onload = function(e) {
+        if (this.status == 200){
           this.loadMIDI(this.response);
         }
       };
       xhr.send();
     },
-    reset:()=>{
-      for(let i=0;i<16;++i){
-        this.setProgram(i,0);
-        this.setBendRange(i,0x100);
-        this.setModulation(i,0);
-        this.setChVol(i,100);
-        this.setPan(i,64);
+    reset: ()=>{
+      for (let i = 0; i < 16; ++i) {
+        this.setProgram(i, 0);
+        this.setBendRange(i, 0x100);
+        this.setModulation(i, 0);
+        this.setChVol(i, 100);
+        this.setPan(i, 64);
         this.resetAllControllers(i);
         this.allSoundOff(i);
-        this.rhythm[i]=0;
-        this.tuningC[i]=0;
-        this.tuningF[i]=0;
+        this.rhythm[i] = 0;
+        this.tuningC[i] = 0;
+        this.tuningF[i] = 0;
       }
-      this.masterTuningC=0;
-      this.masterTuningF=0;
-      this.rhythm[9]=1;
+      this.masterTuningC = 0;
+      this.masterTuningF = 0;
+      this.rhythm[9] = 1;
     },
-    stopMIDI:()=>{
-      this.playing=0;
-      for(var i=0;i<16;++i)
+    stopMIDI: ()=>{
+      this.playing = 0;
+      for (var i = 0; i < 16; ++i)
         this.allSoundOff(i);
     },
-    playMIDI:()=>{
-      if(!this.song)
+    playMIDI: ()=>{
+      if (!this.song)
         return;
-      const dummy=this.actx.createOscillator();
+      const dummy = this.actx.createOscillator();
       dummy.connect(this.actx.destination);
-      dummy.frequency.value=0;
+      dummy.frequency.value = 0;
       dummy.start(0);
-      dummy.stop(this.actx.currentTime+0.001);
-      if(this.playTick>=this.maxTick)
-        this.playTick=0,this.playIndex=0;
-      this.playTime=this.actx.currentTime+.1;
-      this.tick2Time=4*60/this.song.tempo/this.song.timebase;
-      this.playing=1;
+      dummy.stop(this.actx.currentTime + 0.001);
+      if (this.playTick >= this.maxTick) {
+        this.playTick = 0;
+        this.playIndex = 0;
+      }
+      this.playTime = this.actx.currentTime + 0.1;
+      this.tick2Time = 4 * 60 / this.song.tempo / this.song.timebase;
+      this.playing = 1;
     },
-    loadMIDI:(data)=>{
-      function Get2(s, i) { return (s[i]<<8) + s[i+1]; }
-      function Get3(s, i) { return (s[i]<<16) + (s[i+1]<<8) + s[i+2]; }
-      function Get4(s, i) { return (s[i]<<24) + (s[i+1]<<16) + (s[i+2]<<8) + s[i+3]; }
+    loadMIDI: (data)=>{
+      function Get2(s, i) {
+        return (s[i] << 8) + s[i + 1];
+      }
+      function Get3(s, i) {
+        return (s[i] << 16) + (s[i + 1] << 8) + s[i + 2];
+      }
+      function Get4(s, i) {
+        return (s[i] << 24) + (s[i + 1] << 16) + (s[i + 2] << 8) + s[i + 3];
+      }
       function GetStr(s, i, len) {
-        return String.fromCharCode.apply(null,s.slice(i,i+len));
+        return String.fromCharCode.apply(null, s.slice(i, i + len));
       }
       function Delta(s, i) {
-        var v, d;
-        v = 0;
+        var d;
+        var v = 0;
         datalen = 1;
-        while((d = s[i]) & 0x80) {
-          v = (v<<7) + (d&0x7f);
+        while ((d = s[i]) & 0x80) {
+          v = (v << 7) + (d & 0x7f);
           ++datalen;
           ++i;
         }
-        return (v<<7)+d;
+        return (v << 7) + d;
       }
       function Msg(song,tick,s,i){
         var v=s[i];
@@ -1439,13 +1494,15 @@ class WebAudioTinySynthElement extends HTMLElement {
     this.canvas = div.children[0];
     this.appendChild(div);
     WebAudioTinySynthCore.bind(this)(this);
-    const plist=this.properties;
+    const plist = this.properties;
     for (let k in plist) {
       const v = plist[k];
       if (v.observer) {
         this["_" + k] = v.value;
         Object.defineProperty(this, k, {
-          get: ()=>{return this["_" + k]},
+          get: ()=>{
+            return this["_" + k];
+          },
           set: (val)=>{
             this["_" + k] = val;
             this[v.observer]();
