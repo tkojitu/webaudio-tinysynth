@@ -1,7 +1,7 @@
 "use strict";
 
 function WebAudioTinySynthCore(target) {
-  Object.assign(target,{
+  Object.assign(target, {
     properties:{
       masterVol:  {type:Number, value:0.5, observer:"setMasterVol"},
       reverbLev:  {type:Number, value:0.3, observer:"setReverbLev"},
@@ -934,13 +934,6 @@ function WebAudioTinySynthCore(target) {
               t: tick,
               m: exd
             });
-/*
-            var sysex = [];
-            for (var jj = 0; jj < len; ++jj) {
-              sysex.push(s[i + datastart + jj].toString(16));
-            }
-            console.log(sysex);
-*/
             datalen += len + 1;
             break;
           case 0xff:
@@ -1045,6 +1038,12 @@ function WebAudioTinySynthCore(target) {
       }
     },
     setTimbre: (m, n, p)=>{
+      if (m && n >= 35 && n <= 81)
+        this.drummap[n - 35].p = this.filldef(p);
+      if (m == 0 && n >= 0 && n <= 127)
+        this.program[n].p = this.filldef(p);
+    },
+    filldef: (p)=>{
       const defp = {
         g: 0,
         w: "sine",
@@ -1060,19 +1059,13 @@ function WebAudioTinySynthCore(target) {
         q:1,
         k: 0
       };
-      function filldef(p) {
-        for (n = 0; n < p.length; ++n) {
-          for (let k in defp) {
-            if (!p[n].hasOwnProperty(k) || typeof(p[n][k]) == "undefined")
-              p[n][k] = defp[k];
-          }
+      for (let n = 0; n < p.length; ++n) {
+        for (let k in defp) {
+          if (!p[n].hasOwnProperty(k) || typeof(p[n][k]) == "undefined")
+            p[n][k] = defp[k];
         }
-        return p;
       }
-      if (m && n >= 35 && n <= 81)
-        this.drummap[n - 35].p = filldef(p);
-      if (m == 0 && n >= 0 && n <= 127)
-        this.program[n].p = filldef(p);
+      return p;
     },
     _pruneNote: (nt)=>{
       for (let k = nt.o.length - 1; k >= 0; --k) {
@@ -1092,7 +1085,7 @@ function WebAudioTinySynthCore(target) {
         nt.g[k].gain.value = 0;
       }
     },
-    _limitVoices: (ch,n)=>{
+    _limitVoices: (ch, n)=>{
       this.notetab.sort(function(n1, n2) {
         if (n1.f != n2.f)
           return n1.f - n2.f;
