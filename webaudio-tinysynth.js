@@ -701,7 +701,7 @@ function WebAudioTinySynthCore(target) {
         function() {
           if (++this.relcnt >= 3) {
             this.relcnt = 0;
-            for(let i = this.notetab.length - 1; i >= 0; --i) {
+            for (let i = this.notetab.length - 1; i >= 0; --i) {
               var nt = this.notetab[i];
               if (this.actx.currentTime > nt.e) {
                 this._pruneNote(nt);
@@ -820,7 +820,7 @@ function WebAudioTinySynthCore(target) {
       if (p)
         this.playMIDI();
     },
-    getTimbreName: (m,n)=>{
+    getTimbreName: (m, n)=>{
       if (m == 0)
         return this.program[n].name;
       else
@@ -837,7 +837,7 @@ function WebAudioTinySynthCore(target) {
       xhr.responseType = "arraybuffer";
       xhr.loadMIDI = this.loadMIDI.bind(this);
       xhr.onload = function(e) {
-        if (this.status == 200){
+        if (this.status == 200) {
           this.loadMIDI(this.response);
         }
       };
@@ -905,141 +905,186 @@ function WebAudioTinySynthCore(target) {
         }
         return (v << 7) + d;
       }
-      function Msg(song,tick,s,i){
-        var v=s[i];
-        datalen=1;
-        if((v&0x80)==0)
-          v=runst,datalen=0;
-        runst=v;
-        switch(v&0xf0){
-        case 0xc0: case 0xd0:
-          song.ev.push({t:tick,m:[v,s[i+datalen]]});
-          datalen+=1;
+      function Msg(song,tick, s, i) {
+        var v = s[i];
+        datalen = 1;
+        if ((v & 0x80) == 0) {
+          v = runst;
+          datalen = 0;
+        }
+        runst = v;
+        switch (v & 0xf0) {
+        case 0xc0:
+        case 0xd0:
+          song.ev.push({
+            t: tick,
+            m: [v, s[i + datalen]]
+          });
+          datalen += 1;
           break;
         case 0xf0:
-          switch(v) {
+          switch (v) {
           case 0xf0:
           case 0xf7:
-            var len=Delta(s,i+1);
-            datastart=1+datalen;
-            var exd=Array.from(s.slice(i+datastart,i+datastart+len));
+            var len = Delta(s, i + 1);
+            datastart = 1 + datalen;
+            var exd = Array.from(s.slice(i + datastart, i + datastart + len));
             exd.unshift(0xf0);
-            song.ev.push({t:tick,m:exd});
+            song.ev.push({
+              t: tick,
+              m: exd
+            });
 /*
-            var sysex=[];
-            for(var jj=0;jj<len;++jj)
-              sysex.push(s[i+datastart+jj].toString(16));
+            var sysex = [];
+            for (var jj = 0; jj < len; ++jj) {
+              sysex.push(s[i + datastart + jj].toString(16));
+            }
             console.log(sysex);
 */
-            datalen+=len+1;
+            datalen += len + 1;
             break;
           case 0xff:
             var len = Delta(s, i + 2);
-            datastart = 2+datalen;
-            datalen = len+datalen+2;
-            switch(s[i+1]) {
-            case 0x02: song.copyright+=GetStr(s, i + datastart, datalen - 3); break;
-            case 0x01: case 0x03: case 0x04: case 0x09:
-              song.text=GetStr(s, i + datastart, datalen - datastart);
+            datastart = 2 + datalen;
+            datalen = len + datalen + 2;
+            switch (s[i + 1]) {
+            case 0x02:
+              song.copyright += GetStr(s, i + datastart, datalen - 3);
+              break;
+            case 0x01:
+            case 0x03:
+            case 0x04:
+            case 0x09:
+              song.text = GetStr(s, i + datastart, datalen - datastart);
               break;
             case 0x2f:
               return 1;
             case 0x51:
               var val = Math.floor(60000000 / Get3(s, i + 3));
-              song.ev.push({t:tick, m:[0xff51, val]});
+              song.ev.push({
+                t: tick,
+                m: [0xff51, val]
+              });
               break;
             }
             break;
           }
           break;
         default:
-          song.ev.push({t:tick,m:[v,s[i+datalen],s[i+datalen+1]]});
-          datalen+=2;
+          song.ev.push({
+            t: tick,
+            m: [v, s[i + datalen], s[i + datalen + 1]]
+          });
+          datalen += 2;
         }
         return 0;
       }
       this.stopMIDI();
-      var s=new Uint8Array(data);
-      var datalen = 0, datastart = 0, runst = 0x90;
+      var s = new Uint8Array(data);
+      var datalen = 0
+      var datastart = 0
+      var runst = 0x90;
       var idx = 0;
       var hd = s.slice(0,  4);
-      if(hd.toString()!="77,84,104,100")  //MThd
+      if (hd.toString() != "77,84,104,100")  //MThd
         return;
       var len = Get4(s, 4);
       var fmt = Get2(s, 8);
       var numtrk = Get2(s, 10);
-      this.maxTick=0;
-      var tb = Get2(s, 12)*4;
-      idx = (len + 8);
-      this.song={copyright:"",text:"",tempo:120,timebase:tb,ev:[]};
-      for(let tr=0;tr<numtrk;++tr){
-        hd=s.slice(idx, idx+4);
-        len=Get4(s, idx+4);
-        if(hd.toString()=="77,84,114,107") {//MTrk
+      this.maxTick = 0;
+      var tb = Get2(s, 12) * 4;
+      idx = len + 8;
+      this.song = {
+        copyright: "",
+        text: "",
+        tempo: 120,
+        timebase: tb,
+        ev: []
+      };
+      for (let tr = 0; tr < numtrk; ++tr) {
+        hd = s.slice(idx, idx + 4);
+        len = Get4(s, idx + 4);
+        if (hd.toString() == "77,84,114,107") { //MTrk
           var tick = 0;
           var j = 0;
           this.notetab.length = 0;
-          for(;;) {
+          for (;;) {
             tick += Delta(s, idx + 8 + j);
             j += datalen;
             var e = Msg(this.song, tick, s, idx + 8 + j);
             j += datalen;
-            if(e)
+            if (e)
               break;
           }
-          if(tick>this.maxTick)
-            this.maxTick=tick;
+          if (tick > this.maxTick)
+            this.maxTick = tick;
         }
-        idx += (len+8);
+        idx += len + 8;
       }
-      this.song.ev.sort(function(x,y){return x.t-y.t});
+      this.song.ev.sort(function(x, y) {return x.t - y.t});
       this.reset();
       this.locateMIDI(0);
     },
-    setQuality:(q)=>{
-      if(q!=undefined)
-        this.quality=q;
-      for(let i=0;i<128;++i)
-        this.setTimbre(0,i,this.program0[i]);
-      for(let i=0;i<this.drummap0.length;++i)
-        this.setTimbre(1,i+35,this.drummap0[i]);
-      if(this.quality){
-        for(let i=0;i<this.program1.length;++i)
-          this.setTimbre(0,i,this.program1[i]);
-        for(let i=0;i<this.drummap.length;++i){
-          if(this.drummap1[i])
-            this.setTimbre(1,i+35,this.drummap1[i]);
+    setQuality: (q)=>{
+      if (q != undefined)
+        this.quality = q;
+      for (let i = 0; i < 128; ++i) {
+        this.setTimbre(0, i, this.program0[i]);
+      }
+      for (let i = 0; i < this.drummap0.length; ++i) {
+        this.setTimbre(1, i + 35, this.drummap0[i]);
+      }
+      if (this.quality) {
+        for (let i = 0; i < this.program1.length; ++i) {
+          this.setTimbre(0, i, this.program1[i]);
+        }
+        for (let i = 0; i < this.drummap.length; ++i) {
+          if (this.drummap1[i])
+            this.setTimbre(1, i + 35, this.drummap1[i]);
         }
       }
     },
-    setTimbre:(m,n,p)=>{
-      const defp={g:0,w:"sine",t:1,f:0,v:0.5,a:0,h:0.01,d:0.01,s:0,r:0.05,p:1,q:1,k:0};
-      function filldef(p){
-        for(n=0;n<p.length;++n){
-          for(let k in defp){
-            if(!p[n].hasOwnProperty(k) || typeof(p[n][k])=="undefined")
-              p[n][k]=defp[k];
+    setTimbre: (m, n, p)=>{
+      const defp = {
+        g: 0,
+        w: "sine",
+        t: 1,
+        f: 0,
+        v: 0.5,
+        a: 0,
+        h: 0.01,
+        d: 0.01,
+        s: 0,
+        r: 0.05,
+        p: 1,
+        q:1,
+        k: 0
+      };
+      function filldef(p) {
+        for (n = 0; n < p.length; ++n) {
+          for (let k in defp) {
+            if (!p[n].hasOwnProperty(k) || typeof(p[n][k]) == "undefined")
+              p[n][k] = defp[k];
           }
         }
         return p;
       }
-      if(m && n>=35 && n<=81)
-        this.drummap[n-35].p=filldef(p);
-      if(m==0 && n>=0 && n<=127)
-        this.program[n].p=filldef(p);
+      if (m && n >= 35 && n <= 81)
+        this.drummap[n - 35].p = filldef(p);
+      if (m == 0 && n >= 0 && n <= 127)
+        this.program[n].p = filldef(p);
     },
-    _pruneNote:(nt)=>{
-      for(let k=nt.o.length-1;k>=0;--k){
-        if(nt.o[k].frequency){
+    _pruneNote: (nt)=>{
+      for (let k = nt.o.length - 1; k >= 0; --k) {
+        if (nt.o[k].frequency) {
           nt.o[k].frequency.cancelScheduledValues(0);
         }
-        else{
+        else {
           nt.o[k].playbackRate.cancelScheduledValues(0);
         }
         nt.g[k].gain.cancelScheduledValues(0);
-
         nt.o[k].stop();
-        if(nt.o[k].detune) {
+        if (nt.o[k].detune) {
           try {
             this.chmod[nt.ch].disconnect(nt.o[k].detune);
           } catch (e) {}
@@ -1047,348 +1092,414 @@ function WebAudioTinySynthCore(target) {
         nt.g[k].gain.value = 0;
       }
     },
-    _limitVoices:(ch,n)=>{
-      this.notetab.sort(function(n1,n2){
-        if(n1.f!=n2.f) return n1.f-n2.f;
-        if(n1.e!=n2.e) return n2.e-n1.e;
-        return n2.t-n1.t;
+    _limitVoices: (ch,n)=>{
+      this.notetab.sort(function(n1, n2) {
+        if (n1.f != n2.f)
+          return n1.f - n2.f;
+        if (n1.e != n2.e)
+          return n2.e - n1.e;
+        return n2.t - n1.t;
       });
-      for(let i=this.notetab.length-1;i>=0;--i){
-        var nt=this.notetab[i];
-        if(this.actx.currentTime>nt.e || i>=(this.voices-1)){
+      for (let i = this.notetab.length - 1; i >= 0; --i) {
+        var nt = this.notetab[i];
+        if (this.actx.currentTime > nt.e || i >= this.voices - 1) {
           this._pruneNote(nt);
-          this.notetab.splice(i,1);
+          this.notetab.splice(i, 1);
         }
       }
     },
-    _note:(t,ch,n,v,p)=>{
-      let out,sc,pn;
-      const o=[],g=[],vp=[],fp=[],r=[];
-      const f=440*Math.pow(2,(n-69 + this.masterTuningC + this.tuningC[ch] + (this.masterTuningF + this.tuningF[ch])/8192)/12);
-      this._limitVoices(ch,n);
-      for(let i=0;i<p.length;++i){
-        pn=p[i];
-        const dt=t+pn.a+pn.h;
-        if(pn.g==0)
-          out=this.chvol[ch], sc=v*v/16384, fp[i]=f*pn.t+pn.f;
-        else if(pn.g>10)
-          out=g[pn.g-11].gain, sc=1, fp[i]=fp[pn.g-11]*pn.t+pn.f;
-        else if(o[pn.g-1].frequency)
-          out=o[pn.g-1].frequency, sc=fp[pn.g-1], fp[i]=fp[pn.g-1]*pn.t+pn.f;
-        else
-          out=o[pn.g-1].playbackRate, sc=fp[pn.g-1]/440, fp[i]=fp[pn.g-1]*pn.t+pn.f;
-        switch(pn.w[0]){
+    _note: (t, ch, n, v, p)=>{
+      let out;
+      let sc;
+      let pn;
+      const o = [];
+      const g = [];
+      const vp = [];
+      const fp = [];
+      const r = [];
+      const f = 440 * Math.pow(2, (n - 69 + this.masterTuningC + this.tuningC[ch] + (this.masterTuningF + this.tuningF[ch]) / 8192) / 12);
+      this._limitVoices(ch, n);
+      for (let i = 0; i < p.length; ++i) {
+        pn = p[i];
+        const dt = t + pn.a + pn.h;
+        if (pn.g == 0) {
+          out = this.chvol[ch];
+          sc = v * v / 16384;
+          fp[i] = f * pn.t + pn.f;
+        } else if (pn.g > 10) {
+          out = g[pn.g - 11].gain;
+          sc = 1;
+          fp[i] = fp[pn.g - 11] * pn.t + pn.f;
+        } else if (o[pn.g - 1].frequency) {
+          out = o[pn.g - 1].frequency;
+          sc = fp[pn.g - 1];
+          fp[i] = fp[pn.g - 1] * pn.t + pn.f;
+        } else {
+          out = o[pn.g - 1].playbackRate;
+          sc = fp[pn.g - 1] / 440;
+          fp[i] = fp[pn.g - 1] * pn.t + pn.f;
+        }
+        switch (pn.w[0]) {
         case "n":
-          o[i]=this.actx.createBufferSource();
-          o[i].buffer=this.noiseBuf[pn.w];
-          o[i].loop=true;
-          o[i].playbackRate.value=fp[i]/440;
-          if(pn.p!=1)
-            this._setParamTarget(o[i].playbackRate,fp[i]/440*pn.p,t,pn.q);
+          o[i] = this.actx.createBufferSource();
+          o[i].buffer = this.noiseBuf[pn.w];
+          o[i].loop = true;
+          o[i].playbackRate.value = fp[i] / 440;
+          if (pn.p != 1)
+            this._setParamTarget(o[i].playbackRate, fp[i] / 440 * pn.p, t, pn.q);
           if (o[i].detune) {
             this.chmod[ch].connect(o[i].detune);
-            o[i].detune.value=this.bend[ch];
+            o[i].detune.value = this.bend[ch];
           }
           break;
         default:
-          o[i]=this.actx.createOscillator();
-          o[i].frequency.value=fp[i];
-          if(pn.p!=1)
-            this._setParamTarget(o[i].frequency,fp[i]*pn.p,t,pn.q);
-          if(pn.w[0]=="w")
+          o[i] = this.actx.createOscillator();
+          o[i].frequency.value = fp[i];
+          if (pn.p != 1)
+            this._setParamTarget(o[i].frequency, fp[i] * pn.p, t, pn.q);
+          if (pn.w[0] == "w")
             o[i].setPeriodicWave(this.wave[pn.w]);
           else
-            o[i].type=pn.w;
+            o[i].type = pn.w;
           if (o[i].detune) {
             this.chmod[ch].connect(o[i].detune);
-            o[i].detune.value=this.bend[ch];
+            o[i].detune.value = this.bend[ch];
           }
           break;
         }
-        g[i]=this.actx.createGain();
-        r[i]=pn.r;
-        o[i].connect(g[i]); g[i].connect(out);
-        vp[i]=sc*pn.v;
-        if(pn.k)
-          vp[i]*=Math.pow(2,(n-60)/12*pn.k);
-        if(pn.a){
-          g[i].gain.value=0;
-          g[i].gain.setValueAtTime(0,t);
-          g[i].gain.linearRampToValueAtTime(vp[i],t+pn.a);
+        g[i] = this.actx.createGain();
+        r[i] = pn.r;
+        o[i].connect(g[i]);
+        g[i].connect(out);
+        vp[i] = sc * pn.v;
+        if (pn.k)
+          vp[i] *= Math.pow(2, (n - 60) / 12 * pn.k);
+        if (pn.a) {
+          g[i].gain.value = 0;
+          g[i].gain.setValueAtTime(0, t);
+          g[i].gain.linearRampToValueAtTime(vp[i], t + pn.a);
         }
-        else
-          g[i].gain.setValueAtTime(vp[i],t);
-        this._setParamTarget(g[i].gain,pn.s*vp[i],dt,pn.d);
+        else {
+          g[i].gain.setValueAtTime(vp[i], t);
+        }
+        this._setParamTarget(g[i].gain, pn.s * vp[i], dt, pn.d);
         o[i].start(t);
-        if(this.rhythm[ch]){
-
+        if (this.rhythm[ch]) {
           o[i].onended = ()=>{
-              if (o[i].detune) this.chmod[ch].disconnect(o[i].detune);
+              if (o[i].detune)
+                this.chmod[ch].disconnect(o[i].detune);
           };
-          o[i].stop(t+p[0].d*this.releaseRatio);
+          o[i].stop(t + p[0].d * this.releaseRatio);
         }
       }
-      if(!this.rhythm[ch])
-        this.notetab.push({t:t,e:99999,ch:ch,n:n,o:o,g:g,t2:t+pn.a,v:vp,r:r,f:0});
+      if (!this.rhythm[ch])
+        this.notetab.push({
+          t: t,
+          e: 99999,
+          ch: ch,
+          n: n,
+          o: o,
+          g: g,
+          t2: t + pn.a,
+          v: vp,
+          r: r,
+          f: 0
+        });
     },
-    _setParamTarget:(p,v,t,d)=>{
-      if(d!=0)
-        p.setTargetAtTime(v,t,d);
+    _setParamTarget: (p, v, t, d)=>{
+      if (d != 0)
+        p.setTargetAtTime(v, t, d);
       else
-        p.setValueAtTime(v,t);
+        p.setValueAtTime(v, t);
     },
-    _releaseNote:(nt,t)=>{
-      if(nt.ch!=9){
-        for(let k=nt.g.length-1;k>=0;--k){
+    _releaseNote: (nt, t)=>{
+      if (nt.ch != 9) {
+        for (let k = nt.g.length - 1; k >= 0; --k) {
           nt.g[k].gain.cancelScheduledValues(t);
-          if(t==nt.t2)
-            nt.g[k].gain.setValueAtTime(nt.v[k],t);
-          else if(t<nt.t2)
-            nt.g[k].gain.setValueAtTime(nt.v[k]*(t-nt.t)/(nt.t2-nt.t),t);
-          this._setParamTarget(nt.g[k].gain,0,t,nt.r[k]);
+          if (t == nt.t2)
+            nt.g[k].gain.setValueAtTime(nt.v[k], t);
+          else if (t < nt.t2)
+            nt.g[k].gain.setValueAtTime(nt.v[k] * (t - nt.t) / (nt.t2 - nt.t), t);
+          this._setParamTarget(nt.g[k].gain, 0, t, nt.r[k]);
         }
       }
-      nt.e=t+nt.r[0]*this.releaseRatio;
-      nt.f=1;
+      nt.e = t + nt.r[0] * this.releaseRatio;
+      nt.f = 1;
     },
-    setModulation:(ch,v,t)=>{
-      this.chmod[ch].gain.setValueAtTime(v*100/127,this._tsConv(t));
+    setModulation: (ch, v, t)=>{
+      this.chmod[ch].gain.setValueAtTime(v * 100 / 127, this._tsConv(t));
     },
-    setChVol:(ch,v,t)=>{
-      this.vol[ch]=3*v*v/(127*127);
-      this.chvol[ch].gain.setValueAtTime(this.vol[ch]*this.ex[ch],this._tsConv(t));
+    setChVol: (ch, v, t)=>{
+      this.vol[ch] = 3 * v * v / (127 * 127);
+      this.chvol[ch].gain.setValueAtTime(this.vol[ch] * this.ex[ch], this._tsConv(t));
     },
-    setPan:(ch,v,t)=>{
-      if(this.chpan[ch])
-        this.chpan[ch].pan.setValueAtTime((v-64)/64,this._tsConv(t));
+    setPan: (ch, v, t)=>{
+      if (this.chpan[ch])
+        this.chpan[ch].pan.setValueAtTime((v - 64) / 64, this._tsConv(t));
     },
-    setExpression:(ch,v,t)=>{
-      this.ex[ch]=v*v/(127*127);
-      this.chvol[ch].gain.setValueAtTime(this.vol[ch]*this.ex[ch],this._tsConv(t));
+    setExpression: (ch, v, t)=>{
+      this.ex[ch] = v * v / (127 * 127);
+      this.chvol[ch].gain.setValueAtTime(this.vol[ch] * this.ex[ch], this._tsConv(t));
     },
-    setSustain:(ch,v,t)=>{
-      this.sustain[ch]=v;
-      t=this._tsConv(t);
-      if(v<64){
-        for(let i=this.notetab.length-1;i>=0;--i){
-          const nt=this.notetab[i];
-          if(t>=nt.t && nt.ch==ch && nt.f==1)
-            this._releaseNote(nt,t);
+    setSustain: (ch, v, t)=>{
+      this.sustain[ch] = v;
+      t = this._tsConv(t);
+      if (v < 64) {
+        for (let i = this.notetab.length - 1; i >= 0; --i) {
+          const nt = this.notetab[i];
+          if (t >= nt.t && nt.ch == ch && nt.f == 1)
+            this._releaseNote(nt, t);
         }
       }
     },
-    allSoundOff:(ch)=>{
-      for(let i=this.notetab.length-1;i>=0;--i){
-        const nt=this.notetab[i];
-        if(nt.ch==ch){
+    allSoundOff: (ch)=>{
+      for (let i = this.notetab.length - 1; i >= 0; --i) {
+        const nt = this.notetab[i];
+        if (nt.ch == ch) {
           this._pruneNote(nt);
-          this.notetab.splice(i,1);
+          this.notetab.splice(i, 1);
         }
       }
     },
-    resetAllControllers:(ch)=>{
-      this.bend[ch]=0; this.ex[ch]=1.0;
-      this.rpnidx[ch]=0x3fff; this.sustain[ch]=0;
-      if(this.chvol[ch]){
-        this.chvol[ch].gain.value=this.vol[ch]*this.ex[ch];
-        this.chmod[ch].gain.value=0;
+    resetAllControllers: (ch)=>{
+      this.bend[ch] = 0;
+      this.ex[ch] = 1.0;
+      this.rpnidx[ch] = 0x3fff;
+      this.sustain[ch] = 0;
+      if (this.chvol[ch]) {
+        this.chvol[ch].gain.value = this.vol[ch] * this.ex[ch];
+        this.chmod[ch].gain.value = 0;
       }
     },
-    setBendRange:(ch,v)=>{
-      this.brange[ch]=v;
+    setBendRange: (ch, v)=>{
+      this.brange[ch] = v;
     },
-    setProgram:(ch,v)=>{
-      if(this.debug)
-        console.log("Pg("+ch+")="+v);
-      this.pg[ch]=v;
+    setProgram: (ch, v)=>{
+      if (this.debug)
+        console.log("Pg(" + ch + ")=" + v);
+      this.pg[ch] = v;
     },
-    _tsConv:(t)=>{
-      if(t==undefined||t<=0){
-        t=0;
-        if(this.actx)
-          t=this.actx.currentTime;
+    _tsConv: (t)=>{
+      if (t == undefined || t <= 0) {
+        t = 0;
+        if (this.actx)
+          t = this.actx.currentTime;
       }
-      else{
-        if(this.tsmode)
-          t=t*.001-this.tsdiff;
+      else {
+        if (this.tsmode)
+          t = t * 0.001 - this.tsdiff;
       }
       return t;
     },
-    setBend:(ch,v,t)=>{
-      t=this._tsConv(t);
-      const br=this.brange[ch]*100/127;
-      this.bend[ch]=(v-8192)*br/8192;
-      for(let i=this.notetab.length-1;i>=0;--i){
-        const nt=this.notetab[i];
-        if(nt.ch==ch){
-          for(let k=nt.o.length-1;k>=0;--k){
-            if(nt.o[k].frequency)
-              if (nt.o[k].detune) nt.o[k].detune.setValueAtTime(this.bend[ch],t);
+    setBend: (ch, v, t)=>{
+      t = this._tsConv(t);
+      const br = this.brange[ch] * 100 / 127;
+      this.bend[ch] = (v - 8192) * br / 8192;
+      for (let i = this.notetab.length - 1; i >= 0; --i) {
+        const nt = this.notetab[i];
+        if (nt.ch == ch) {
+          for (let k = nt.o.length - 1; k >= 0; --k) {
+            if (nt.o[k].frequency)
+              if (nt.o[k].detune)
+                nt.o[k].detune.setValueAtTime(this.bend[ch], t);
           }
         }
       }
     },
-    noteOff:(ch,n,t)=>{
-      if(this.rhythm[ch])
+    noteOff: (ch, n, t)=>{
+      if (this.rhythm[ch])
         return;
-      t=this._tsConv(t);
-      for(let i=this.notetab.length-1;i>=0;--i){
-        const nt=this.notetab[i];
-        if(t>=nt.t && nt.ch==ch && nt.n==n && nt.f==0){
-          nt.f=1;
-          if(this.sustain[ch]<64)
-            this._releaseNote(nt,t);
+      t = this._tsConv(t);
+      for (let i = this.notetab.length - 1; i >= 0; --i) {
+        const nt = this.notetab[i];
+        if (t >= nt.t && nt.ch == ch && nt.n == n && nt.f == 0) {
+          nt.f = 1;
+          if (this.sustain[ch] < 64)
+            this._releaseNote(nt, t);
         }
       }
     },
-    noteOn:(ch,n,v,t)=>{
-      if(v==0){
-        this.noteOff(ch,n,t);
+    noteOn: (ch, n, v, t)=>{
+      if (v == 0) {
+        this.noteOff(ch, n, t);
         return;
       }
-      t=this._tsConv(t);
-      if(this.rhythm[ch]){
-        if(n>=35&&n<=81)
-          this._note(t,ch,n,v,this.drummap[n-35].p);
+      t = this._tsConv(t);
+      if (this.rhythm[ch]) {
+        if (n >= 35 && n <= 81)
+          this._note(t, ch, n, v, this.drummap[n - 35].p);
         return;
       }
-      this._note(t,ch,n,v,this.program[this.pg[ch]].p);
+      this._note(t, ch, n, v, this.program[this.pg[ch]].p);
     },
-    setTsMode:(tsmode)=>{
-      this.tsmode=tsmode;
+    setTsMode: (tsmode)=>{
+      this.tsmode = tsmode;
     },
-    send:(msg,t)=>{    /* send midi message */
-      const ch=msg[0]&0xf;
-      const cmd=msg[0]&~0xf;
-      if(cmd<0x80||cmd>=0x100)
+    send: (msg, t)=>{    /* send midi message */
+      const ch = msg[0] & 0xf;
+      const cmd  =msg[0] & ~0xf;
+      if (cmd < 0x80 || cmd >= 0x100)
         return;
-      if(this.audioContext.state=="suspended"){
+      if (this.audioContext.state == "suspended") {
         this.audioContext.resume();
       }
-      switch(cmd){
+      switch (cmd) {
       case 0xb0:  /* ctl change */
-        switch(msg[1]){
-        case 1:  this.setModulation(ch,msg[2],t); break;
-        case 7:  this.setChVol(ch,msg[2],t); break;
-        case 10: this.setPan(ch,msg[2],t); break;
-        case 11: this.setExpression(ch,msg[2],t); break;
-        case 64: this.setSustain(ch,msg[2],t); break;
-        case 98:  case 99: this.rpnidx[ch]=0x3fff; break; /* nrpn lsb/msb */
-        case 100: this.rpnidx[ch]=(this.rpnidx[ch]&0x3f80)|msg[2]; break; /* rpn lsb */
-        case 101: this.rpnidx[ch]=(this.rpnidx[ch]&0x7f)|(msg[2]<<7); break; /* rpn msb */
+        switch (msg[1]) {
+        case 1:
+          this.setModulation(ch, msg[2], t);
+          break;
+        case 7:
+          this.setChVol(ch, msg[2], t);
+          break;
+        case 10:
+          this.setPan(ch,msg[2], t);
+          break;
+        case 11:
+          this.setExpression(ch, msg[2], t);
+          break;
+        case 64:
+          this.setSustain(ch, msg[2], t);
+          break;
+        case 98:
+        case 99:
+          this.rpnidx[ch] = 0x3fff;
+          break; /* nrpn lsb/msb */
+        case 100:
+          this.rpnidx[ch] = (this.rpnidx[ch] & 0x3f80) | msg[2];
+          break; /* rpn lsb */
+        case 101:
+          this.rpnidx[ch] = (this.rpnidx[ch] & 0x7f) | (msg[2] << 7);
+          break; /* rpn msb */
         case 6:  /* data entry msb */
           switch (this.rpnidx[ch]) {
             case 0:
-              this.brange[ch]=(msg[2]<<7)+(this.brange[ch]&0x7f);
+              this.brange[ch] = (msg[2] << 7) + (this.brange[ch] & 0x7f);
               break;
             case 1:
-              this.tuningF[ch]=(msg[2]<<7)+((this.tuningF[ch]+0x2000)&0x7f)-0x2000;
+              this.tuningF[ch] = (msg[2] << 7) + ((this.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
               break;
             case 2:
-              this.tuningC[ch]=msg[2]-0x40;
+              this.tuningC[ch] = msg[2] - 0x40;
               break;
           }
           break;
         case 38:  /* data entry lsb */
           switch (this.rpnidx[ch]) {
             case 0:
-              this.brange[ch]=(this.brange[ch]&0x3f80)|msg[2];
+              this.brange[ch] = (this.brange[ch] & 0x3f80) | msg[2];
               break;
             case 1:
-              this.tuningF[ch]=((this.tuningF[ch]+0x2000)&0x3f80)|msg[2]-0x2000;
+              this.tuningF[ch] = ((this.tuningF[ch] + 0x2000) & 0x3f80) | msg[2] - 0x2000;
               break;
-            case 2: break;
+            case 2:
+              break;
           }
           break;
         case 120:  /* all sound off */
         case 123:  /* all notes off */
-        case 124: case 125: case 126: case 127: /* omni off/on mono/poly */
+        case 124:  /* omni off/on mono/poly */
+        case 125:
+        case 126:
+        case 127:
           this.allSoundOff(ch);
           break;
-        case 121: this.resetAllControllers(ch); break;
+        case 121:
+          this.resetAllControllers(ch);
+          break;
         }
         break;
-      case 0xc0: this.setProgram(ch,msg[1]); break;
-      case 0xe0: this.setBend(ch,(msg[1]+(msg[2]<<7)),t); break;
-      case 0x90: this.noteOn(ch,msg[1],msg[2],t); break;
-      case 0x80: this.noteOff(ch,msg[1],t); break;
+      case 0xc0:
+        this.setProgram(ch, msg[1]);
+        break;
+      case 0xe0:
+        this.setBend(ch,(msg[1] + (msg[2] << 7)), t);
+        break;
+      case 0x90:
+        this.noteOn(ch, msg[1], msg[2], t);
+        break;
+      case 0x80:
+        this.noteOff(ch, msg[1], t);
+        break;
       case 0xf0:
         if (msg[0] == 0xff) {
           this.reset();
           break;
         }
-        if(msg[0]!=254 && this.debug){
-          var ds=[];
-          for(let ii=0;ii<msg.length;++ii)
+        if (msg[0] != 254 && this.debug) {
+          var ds = [];
+          for (let ii = 0; ii < msg.length; ++ii) {
             ds.push(msg[ii].toString(16));
+          }
         }
-        if (msg[0]==0xf0) {
-          if (msg[1]==0x7f && msg[3]==4) {
-            if (msg[4]==3 && msg.length >= 8) { // Master Fine Tuning
-              this.masterTuningF = msg[6]*0x80 + msg[5] - 8192;
+        if (msg[0] == 0xf0) {
+          if (msg[1] == 0x7f && msg[3] == 4) {
+            if (msg[4] == 3 && msg.length >= 8) { // Master Fine Tuning
+              this.masterTuningF = msg[6] * 0x80 + msg[5] - 8192;
             }
-            if (msg[4]==4 && msg.length >= 8) { // Master Coarse Tuning
-              this.masterTuningC = msg[6]-0x40;
+            if (msg[4] == 4 && msg.length >= 8) { // Master Coarse Tuning
+              this.masterTuningC = msg[6] - 0x40;
             }
           }
-          if(msg[1]==0x41&&msg[3]==0x42&&msg[4]==0x12&&msg[5]==0x40){
-            if((msg[6]&0xf0)==0x10&&msg[7]==0x15){
-              const c=[9,0,1,2,3,4,5,6,7,8,10,11,12,13,14,15][msg[6]&0xf];
-              this.rhythm[c]=msg[8];
+          if (msg[1] == 0x41 && msg[3] == 0x42 && msg[4] == 0x12 && msg[5] == 0x40) {
+            if ((msg[6] & 0xf0) == 0x10 && msg[7] == 0x15) {
+              const c = [9 ,0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][msg[6] & 0xf];
+              this.rhythm[c] = msg[8];
             }
           }
         }
         break;
       }
     },
-    _createWave:(w)=>{
-      const imag=new Float32Array(w.length);
-      const real=new Float32Array(w.length);
-      for(let i=1;i<w.length;++i)
-        imag[i]=w[i];
-      return this.actx.createPeriodicWave(real,imag);
+    _createWave: (w)=>{
+      const imag = new Float32Array(w.length);
+      const real = new Float32Array(w.length);
+      for (let i = 1; i < w.length; ++i) {
+        imag[i] = w[i];
+      }
+      return this.actx.createPeriodicWave(real, imag);
     },
-    getAudioContext:()=>{
+    getAudioContext: ()=>{
       return this.actx;
     },
-    setAudioContext:(actx,dest)=>{
-      this.audioContext=this.actx=actx;
-      this.dest=dest;
-      if(!dest)
-        this.dest=actx.destination;
-      this.tsdiff=performance.now()*.001-this.actx.currentTime;
-      console.log("TSDiff:"+this.tsdiff);
-      this.out=this.actx.createGain();
-      this.comp=this.actx.createDynamicsCompressor();
-      var blen=this.actx.sampleRate*.5|0;
-      this.convBuf=this.actx.createBuffer(2,blen,this.actx.sampleRate);
-      this.noiseBuf={};
-      this.noiseBuf.n0=this.actx.createBuffer(1,blen,this.actx.sampleRate);
-      this.noiseBuf.n1=this.actx.createBuffer(1,blen,this.actx.sampleRate);
-      var d1=this.convBuf.getChannelData(0);
-      var d2=this.convBuf.getChannelData(1);
-      var dn=this.noiseBuf.n0.getChannelData(0);
-      var dr=this.noiseBuf.n1.getChannelData(0);
-      for(let i=0;i<blen;++i){
-        if(i/blen<Math.random()){
-          d1[i]=Math.exp(-3*i/blen)*(Math.random()-.5)*.5;
-          d2[i]=Math.exp(-3*i/blen)*(Math.random()-.5)*.5;
+    setAudioContext: (actx, dest)=>{
+      this.audioContext = this.actx = actx;
+      this.dest = dest;
+      if (!dest)
+        this.dest = actx.destination;
+      this.tsdiff = performance.now() * 0.001 - this.actx.currentTime;
+      console.log("TSDiff:" + this.tsdiff);
+      this.out = this.actx.createGain();
+      this.comp = this.actx.createDynamicsCompressor();
+      var blen = this.actx.sampleRate * 0.5 | 0;
+      this.convBuf = this.actx.createBuffer(2, blen, this.actx.sampleRate);
+      this.noiseBuf = {};
+      this.noiseBuf.n0 = this.actx.createBuffer(1, blen, this.actx.sampleRate);
+      this.noiseBuf.n1 = this.actx.createBuffer(1, blen, this.actx.sampleRate);
+      var d1 = this.convBuf.getChannelData(0);
+      var d2 = this.convBuf.getChannelData(1);
+      var dn = this.noiseBuf.n0.getChannelData(0);
+      var dr = this.noiseBuf.n1.getChannelData(0);
+      for (let i = 0; i < blen; ++i) {
+        if (i / blen < Math.random()) {
+          d1[i] = Math.exp(-3 * i / blen) * (Math.random() - 0.5) * 0.5;
+          d2[i] = Math.exp(-3 * i / blen) * (Math.random() - 0.5) * 0.5;
         }
-        dn[i]=Math.random()*2-1;
+        dn[i] = Math.random() * 2 - 1;
       }
-      for(let jj=0;jj<64;++jj){
-        const r1=Math.random()*10+1;
-        const r2=Math.random()*10+1;
-        for(let i=0;i<blen;++i){
-          var dd=Math.sin((i/blen)*2*Math.PI*440*r1)*Math.sin((i/blen)*2*Math.PI*440*r2);
-          dr[i]+=dd/8;
+      for (let jj = 0; jj < 64; ++jj) {
+        const r1 = Math.random() * 10 + 1;
+        const r2 = Math.random() * 10 + 1;
+        for (let i = 0; i < blen; ++i) {
+          var dd = Math.sin((i / blen) * 2 * Math.PI * 440 * r1) * Math.sin((i / blen) * 2 * Math.PI * 440 * r2);
+          dr[i] += dd / 8;
         }
       }
-      if(this.useReverb){
-        this.conv=this.actx.createConvolver();
-        this.conv.buffer=this.convBuf;
-        this.rev=this.actx.createGain();
-        this.rev.gain.value=this.reverbLev;
+      if (this.useReverb) {
+        this.conv = this.actx.createConvolver();
+        this.conv.buffer = this.convBuf;
+        this.rev = this.actx.createGain();
+        this.rev.gain.value = this.reverbLev;
         this.out.connect(this.conv);
         this.conv.connect(this.rev);
         this.rev.connect(this.comp);
@@ -1396,31 +1507,35 @@ function WebAudioTinySynthCore(target) {
       this.setMasterVol();
       this.out.connect(this.comp);
       this.comp.connect(this.dest);
-      this.chvol=[]; this.chmod=[]; this.chpan=[];
-      this.wave={"w9999":this._createWave("w9999")};
-      this.lfo=this.actx.createOscillator();
-      this.lfo.frequency.value=5;
+      this.chvol = [];
+      this.chmod = [];
+      this.chpan = [];
+      this.wave = {
+        "w9999": this._createWave("w9999")
+      };
+      this.lfo = this.actx.createOscillator();
+      this.lfo.frequency.value = 5;
       this.lfo.start(0);
-      for(let i=0;i<16;++i){
-        this.chvol[i]=this.actx.createGain();
-        if(this.actx.createStereoPanner){
-          this.chpan[i]=this.actx.createStereoPanner();
+      for (let i = 0; i < 16; ++i) {
+        this.chvol[i] = this.actx.createGain();
+        if (this.actx.createStereoPanner) {
+          this.chpan[i] = this.actx.createStereoPanner();
           this.chvol[i].connect(this.chpan[i]);
           this.chpan[i].connect(this.out);
         }
-        else{
-          this.chpan[i]=null;
+        else {
+          this.chpan[i] = null;
           this.chvol[i].connect(this.out);
         }
-        this.chmod[i]=this.actx.createGain();
+        this.chmod[i] = this.actx.createGain();
         this.lfo.connect(this.chmod[i]);
-        this.pg[i]=0;
+        this.pg[i] = 0;
         this.resetAllControllers(i);
       }
       this.setReverbLev();
       this.reset();
-      this.send([0x90,60,1]);
-      this.send([0x90,60,0]);
+      this.send([0x90, 60, 1]);
+      this.send([0x90, 60, 0]);
     },
   });
 }
@@ -1456,22 +1571,22 @@ class WebAudioTinySynthElement extends HTMLElement {
   id='wa-canvas' width='300' height='32'
   touch-action='none' tabindex='0'
   style='
-    position:relative;
-    margin:0;
-    border:none;
-    width:300px;
-    height:32px;
+    position: relative;
+    margin: 0;
+    border: none;
+    width: 300px;
+    height: 32px;
   '
 ></canvas>
 <div id='wa-logo'
   style='
-    display:none;
-    position:absolute;
-    top:5px;
-    left:5px;
-    color:#fff;
-    font-size:8px;
-    background:rgba(0,0,0,0.5);
+    display: none;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    color: #fff;
+    font-size: 8px;
+    background: rgba(0,0,0,0.5);
   '
 >TinySynth</div>`;
 
