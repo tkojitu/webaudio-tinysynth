@@ -1,5 +1,114 @@
 "use strict";
 
+class Control {
+	constructor(synth, canvas) {
+		this.synth = synth;
+		this.waitdrop = 0;
+		this.addListeners(canvas);
+	}
+
+	addListeners(canvas) {
+    canvas.addEventListener("dragover", this.dragOver.bind(this), false);
+    canvas.addEventListener("dragleave", this.dragLeave.bind(this), false);
+    canvas.addEventListener("drop", this.execDrop.bind(this), false);
+    canvas.addEventListener("click", this.click.bind(this), false);
+    canvas.addEventListener("mousedown", this.pointerdown.bind(this), false);
+    canvas.addEventListener("mousemove", this.pointermove.bind(this), false);
+    canvas.addEventListener("touchstart", this.pointerdown.bind(this), false);
+    canvas.addEventListener("touchend", this.pointerup.bind(this), false);
+    canvas.addEventListener("touchcancel", this.pointerup.bind(this), false);
+    canvas.addEventListener("touchmove", this.pointermove.bind(this), false);
+	}
+
+  dragLeave(e) {
+    this.waitdrop = 0;
+  }
+
+  dragOver(e) {
+    this.waitdrop = 1;
+    e.stopPropagation();
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }
+
+  execDrop(e) {
+		this.waitdrop = 0;
+		const f = e.dataTransfer.files;
+		this.synth.loadFile(f[0]);
+		e.stopPropagation();
+		e.preventDefault();
+	}
+
+  click(e) {
+		const pos = this.getPos(e);
+		if (pos.x < 40 && this.song) {
+			this.synth.playOrStop();
+		}
+		if (pos.x >= 215 && pos.x < 243 && this.downpos.x >= 215 && this.downpos.x < 243) {
+			this.synth.updateMasterVolume();
+		}
+	}
+
+  getPos(e) {
+		var p = e.target.getBoundingClientRect();
+		if (p.right != p.left)
+		  return {
+				x: (e.clientX - p.left) * 300 / (p.right - p.left),
+				y: e.clientY - p.top
+		  };
+		return {
+		  x: 0,
+		  y: 0
+		};
+	}
+
+	pointerdown(ev) {
+		let e = ev;
+		if (ev.touches)
+			e = ev.touches[0];
+		this.downpos = this.getPos(e);
+		if (ev.touches || (e.buttons & 1)) {
+			if (this.downpos.x >= 80 && this.downpos.x <= 208) {
+				const p = (this.downpos.x - 80) / 128 * this.synth.maxTick;
+				this.synth.locateMIDI(p);
+				document.body.addEventListener('touchstart', this.preventScroll, false);
+			}
+			if (this.downpos.x >= 250 && this.downpos.x < 282) {
+				const p = (this.downpos.x - 250) / 32;
+				this.synth.setMasterVol(p);
+				document.body.addEventListener('touchstart', this.preventScroll, false);
+			}
+		}
+	}
+
+  preventScroll(e) {
+		e.preventDefault();
+	}
+
+	pointerup(ev) {
+		document.body.removeEventListener('touchstart', this.preventScroll, false);
+	}
+
+  pointermove(ev) {
+		let e = ev;
+		if (ev.touches)
+		  	e = ev.touches[0];
+		if (ev.touches || (e.buttons & 1)) {
+		  const pos = this.getPos(e);
+		  if (pos.x >= 70 && pos.x <= 208) {
+				if (pos.x < 80)
+			  	pos.x = 80;
+			  const p = (pos.x - 80) / 128 * this.synth.maxTick;
+		  	this.synth.locateMIDI(p);
+		  }
+		  if (pos.x >= 250 && pos.x < 282) {
+				const p = (pos.x - 250) / 32;
+				this.synth.setMasterVol(p);
+		  }
+		}
+	}
+}
+
 function WebAudioTinySynthCore(target) {
   Object.assign(target, {
     properties:{
@@ -445,16 +554,7 @@ function WebAudioTinySynthCore(target) {
         this.ctx = this.canvas.getContext("2d");
         this.ctx.fillStyle = "#000";
         this.ctx.fillRect(0, 0, 300, 32);
-        this.canvas.addEventListener("dragover", this.dragOver.bind(this), false);
-        this.canvas.addEventListener("dragleave", this.dragLeave.bind(this), false);
-        this.canvas.addEventListener("drop", this.execDrop.bind(this), false);
-        this.canvas.addEventListener("click", this.click.bind(this), false);
-        this.canvas.addEventListener("mousedown", this.pointerdown.bind(this), false);
-        this.canvas.addEventListener("mousemove", this.pointermove.bind(this), false);
-        this.canvas.addEventListener("touchstart", this.pointerdown.bind(this), false);
-        this.canvas.addEventListener("touchend", this.pointerup.bind(this), false);
-        this.canvas.addEventListener("touchcancel", this.pointerup.bind(this), false);
-        this.canvas.addEventListener("touchmove", this.pointermove.bind(this), false);
+        this.control = new Control(this, this.canvas);
       }
     },
     _guiUpdate: ()=>{
@@ -561,99 +661,15 @@ function WebAudioTinySynthCore(target) {
       const s = ti % 60;
       return ("00" + m).substr(-2) + ":" + ("00" + s).substr(-2);
     },
-    preventScroll: (e)=>{
-      e.preventDefault();
-    },
-    pointerup: (ev)=>{
-      document.body.removeEventListener('touchstart', this.preventScroll, false);
-    },
-    getPos: (e)=>{
-      var p = e.target.getBoundingClientRect();
-      if (p.right != p.left)
-        return {
-          x: (e.clientX - p.left) * 300 / (p.right - p.left),
-          y: e.clientY - p.top
-        };
-      return {
-        x: 0,
-        y: 0
-      };
-    },
-    pointerdown: (ev)=>{
-      let e = ev;
-      if (ev.touches)
-        e = ev.touches[0];
-      this.downpos = this.getPos(e);
-      if (ev.touches || (e.buttons & 1)) {
-        if (this.song && this.downpos.x >= 80 && this.downpos.x <= 208) {
-          const p = (this.downpos.x - 80) / 128 * this.maxTick;
-          this.locateMIDI(p);
-          document.body.addEventListener('touchstart', this.preventScroll, false);
-        }
-        if (this.downpos.x >= 250 && this.downpos.x < 282) {
-          const p = (this.downpos.x - 250) / 32;
-          this.setMasterVol(p);
-          document.body.addEventListener('touchstart', this.preventScroll, false);
-        }
+    loadFile: (f)=>{
+      if (this.disabledrop != 0) {
+        return;
       }
-    },
-    pointermove: (ev)=>{
-      let e = ev;
-      if (ev.touches)
-        e = ev.touches[0];
-      if (ev.touches || (e.buttons & 1)) {
-        const pos = this.getPos(e);
-        if (this.song && pos.x >= 70 && pos.x <= 208) {
-          if (pos.x < 80)
-            pos.x = 80;
-          const p = (pos.x - 80) / 128 * this.maxTick;
-          this.locateMIDI(p);
-        }
-        if (pos.x >= 250 && pos.x < 282) {
-          const p = (pos.x - 250) / 32;
-          this.setMasterVol(p);
-        }
-      }
-    },
-    click: (e)=>{
-      const pos = this.getPos(e);
-      if (pos.x < 40 && this.song) {
-        if (this.playing)
-          this.stopMIDI();
-        else if (this.song)
-          this.playMIDI();
-      }
-      if (pos.x >= 215 && pos.x < 243 && this.downpos.x >= 215 && this.downpos.x < 243) {
-        if (this.masterVol > 0) {
-          this.lastMasterVol = this.masterVol;
-          this.masterVol = 0;
-        }
-        else {
-          this.masterVol = this.lastMasterVol;
-        }
-      }
-    },
-    dragLeave: (e)=>{
-      this.waitdrop = 0;
-    },
-    dragOver: (e)=>{
-      this.waitdrop = 1;
-      e.stopPropagation();
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
-    },
-    execDrop: (e)=>{
-      this.waitdrop = 0;
-      const f = e.dataTransfer.files;
-      if (this.disabledrop == 0) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-          this.loadMIDI(reader.result);
-        }.bind(this);
-        reader.readAsArrayBuffer(f[0]);
-      }
-      e.stopPropagation();
-      e.preventDefault();
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        this.loadMIDI(reader.result);
+      }.bind(this);
+      reader.readAsArrayBuffer(f);
     },
     /*@@guiEND*/
     ready: ()=>{
@@ -776,6 +792,9 @@ function WebAudioTinySynthCore(target) {
       };
     },
     locateMIDI: (tick)=>{
+      if (!this.song) {
+        return;
+      }
       let i;
       let p = this.playing;
       this.stopMIDI();
@@ -1406,7 +1425,7 @@ function WebAudioTinySynthCore(target) {
         this.setProgram(ch, msg[1]);
         break;
       case 0xe0:
-        this.setBend(ch,(msg[1] + (msg[2] << 7)), t);
+        this.setBend(ch, (msg[1] + (msg[2] << 7)), t);
         break;
       case 0x90:
         this.noteOn(ch, msg[1], msg[2], t);
@@ -1436,7 +1455,7 @@ function WebAudioTinySynthCore(target) {
           }
           if (msg[1] == 0x41 && msg[3] == 0x42 && msg[4] == 0x12 && msg[5] == 0x40) {
             if ((msg[6] & 0xf0) == 0x10 && msg[7] == 0x15) {
-              const c = [9 ,0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][msg[6] & 0xf];
+              const c = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][msg[6] & 0xf];
               this.rhythm[c] = msg[8];
             }
           }
