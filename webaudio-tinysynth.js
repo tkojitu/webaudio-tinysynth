@@ -109,6 +109,127 @@ class Control {
 	}
 }
 
+class Drawer {
+	constructor(synth, canvas) {
+		this.synth = synth;
+		this.canvas = canvas;
+	}
+
+	init() {
+    let ctx = this.canvas.getContext("2d");
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, 300, 32);
+	}
+
+  update() {
+		if (!this.canvas) {
+			return;
+		}
+    let ctx = this.canvas.getContext("2d");
+		ctx.fillStyle = "#000";
+		ctx.fillRect(0, 0, 300, 32);
+		var row1 = 8;
+		var row2 = 20;
+		if (this.synth.song) {
+			row1 = 4;
+			row2 = 24;
+		} else {
+			ctx.fillStyle = "#fff";
+			ctx.fillText("TinySynth", 8, 20);
+		}
+		if (this.synth.graph) {
+			ctx.fillStyle = "#800";
+			ctx.fillRect(80, row1, 132, 4);
+			ctx.fillRect(80, row2, 132, 4);
+			ctx.fillStyle = "#f00";
+			for (let i = this.synth.notetab.length - 1; i >= 0; --i) {
+				const nt = this.synth.notetab[i];
+				if (!nt.f || this.synth.rhythm[nt.ch]) {
+					ctx.fillRect(80 + nt.n, row1, 4, 4);
+					ctx.fillRect(80 + nt.ch * 8, row2, 6, 4);
+				}
+			}
+		}
+		if (this.synth.perfmon) {
+			ctx.fillStyle = "#fff";
+			ctx.fillRect(180, 30, 28, -12);
+			ctx.fillStyle = "#000";
+			ctx.fillText(this.synth.notetab.length, 185, 28);
+		}
+		ctx.fillStyle = "#fff";
+		ctx.fillRect(250, 15, 32, 2);
+		ctx.fillStyle = "#fff";
+		ctx.strokeStyle = "#000";
+		ctx.beginPath();
+		ctx.arc(250 + this.synth.masterVol * 32, 16, 6, 0, 6.28, 0);
+		ctx.moveTo(220, 12);
+		ctx.lineTo(224, 12);
+		ctx.lineTo(230, 6);
+		ctx.lineTo(230, 26);
+		ctx.lineTo(224, 20);
+		ctx.lineTo(220, 20);
+		ctx.fill();
+		ctx.stroke();
+		ctx.strokeStyle = "#fff";
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.arc(230, 16, 4, -1, 1, false);
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.arc(230, 16, 8, -1, 1, false);
+		ctx.stroke();
+		if (this.masterVol == 0) {
+			ctx.strokeStyle = "#000";
+			ctx.lineWidth = 4;
+			ctx.beginPath();
+			ctx.moveTo(220, 7);
+			ctx.lineTo(238, 25);
+			ctx.stroke();
+			ctx.strokeStyle = "#fff";
+			ctx.lineWidth = 2;
+			ctx.stroke();
+		}
+		if (this.song) {
+			ctx.fillStyle = "#fff";
+			ctx.fillRect(4, 2, 28, 28);
+			ctx.fillRect(80, 15, 128, 2);
+			ctx.fillStyle = "#000";
+			if (this.synth.playing) {
+				ctx.fillRect(12, 10, 4, 12);
+				ctx.fillRect(22, 10, 4, 12);
+			}
+			else {
+				ctx.beginPath();
+				ctx.moveTo(12, 9);
+				ctx.lineTo(25, 16);
+				ctx.lineTo(12, 23);
+				ctx.fill();
+			}
+			ctx.fillStyle = "#fff"
+			ctx.fillText(this.toTime(this.synth.playTick), 38, 14);
+			ctx.fillText(this.toTime(this.synth.maxTick), 38, 28);
+			ctx.strokeStyle = "#000";
+			ctx.beginPath();
+			ctx.arc(80 + this.synth.playTick / this.synth.maxTick * 128, 16, 6, 0, 6.28, 0);
+			ctx.fill();
+			ctx.stroke();
+		}
+		if (this.synth.waitsDrop()) {
+			ctx.fillStyle = "rgba(0,0,0,0.7)"
+			ctx.fillRect(0, 0, 300, 32);
+			ctx.fillStyle = "#fff";
+			ctx.fillText("Drop MIDI File Here", 100, 20);
+		}
+	}
+
+	toTime(ti) {
+		ti = (ti * 4 * 60 / this.synth.song.timebase / this.synth.song.tempo) | 0;
+		const m = (ti / 60) | 0;
+		const s = ti % 60;
+		return ("00" + m).substr(-2) + ":" + ("00" + s).substr(-2);
+	}
+}
+
 function WebAudioTinySynthCore(target) {
   Object.assign(target, {
     properties:{
@@ -551,115 +672,15 @@ function WebAudioTinySynthCore(target) {
     /*@@gui*/
     _guiInit: ()=>{
       if (this.canvas) {
-        this.ctx = this.canvas.getContext("2d");
-        this.ctx.fillStyle = "#000";
-        this.ctx.fillRect(0, 0, 300, 32);
+        this.drawer = new Drawer(this, this.canvas);
         this.control = new Control(this, this.canvas);
       }
     },
     _guiUpdate: ()=>{
-      if (this.canvas) {
-        this.ctx.fillStyle = "#000";
-        this.ctx.fillRect(0, 0, 300, 32);
-        var row1 = 8;
-        var row2 = 20;
-        if (this.song) {
-          row1 = 4;
-          row2 = 24;
-        } else {
-          this.ctx.fillStyle = "#fff";
-          this.ctx.fillText("TinySynth", 8, 20);
-        }
-        if (this.graph) {
-          this.ctx.fillStyle = "#800";
-          this.ctx.fillRect(80, row1, 132, 4);
-          this.ctx.fillRect(80, row2, 132, 4);
-          this.ctx.fillStyle = "#f00";
-          for (let i = this.notetab.length - 1; i >= 0; --i) {
-            const nt = this.notetab[i];
-            if (!nt.f || this.rhythm[nt.ch]) {
-              this.ctx.fillRect(80 + nt.n, row1, 4, 4);
-              this.ctx.fillRect(80 + nt.ch * 8, row2, 6, 4);
-            }
-          }
-        }
-        if (this.perfmon) {
-          this.ctx.fillStyle = "#fff";
-          this.ctx.fillRect(180, 30, 28, -12);
-          this.ctx.fillStyle = "#000";
-          this.ctx.fillText(this.notetab.length, 185, 28);
-        }
-        this.ctx.fillStyle = "#fff";
-        this.ctx.fillRect(250, 15, 32, 2);
-        this.ctx.fillStyle = "#fff";
-        this.ctx.strokeStyle = "#000";
-        this.ctx.beginPath();
-        this.ctx.arc(250 + this.masterVol * 32, 16, 6, 0, 6.28, 0);
-        this.ctx.moveTo(220, 12);
-        this.ctx.lineTo(224, 12);
-        this.ctx.lineTo(230, 6);
-        this.ctx.lineTo(230, 26);
-        this.ctx.lineTo(224, 20);
-        this.ctx.lineTo(220, 20);
-        this.ctx.fill();
-        this.ctx.stroke();
-        this.ctx.strokeStyle = "#fff";
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.arc(230, 16, 4, -1, 1, false);
-        this.ctx.stroke();
-        this.ctx.beginPath();
-        this.ctx.arc(230, 16, 8, -1, 1, false);
-        this.ctx.stroke();
-        if (this.masterVol == 0) {
-          this.ctx.strokeStyle = "#000";
-          this.ctx.lineWidth = 4;
-          this.ctx.beginPath();
-          this.ctx.moveTo(220, 7);
-          this.ctx.lineTo(238, 25);
-          this.ctx.stroke();
-          this.ctx.strokeStyle = "#fff";
-          this.ctx.lineWidth = 2;
-          this.ctx.stroke();
-        }
-        if (this.song) {
-          this.ctx.fillStyle = "#fff";
-          this.ctx.fillRect(4, 2, 28, 28);
-          this.ctx.fillRect(80, 15, 128, 2);
-          this.ctx.fillStyle = "#000";
-          if (this.playing) {
-            this.ctx.fillRect(12, 10, 4, 12);
-            this.ctx.fillRect(22, 10, 4, 12);
-          }
-          else {
-            this.ctx.beginPath();
-            this.ctx.moveTo(12, 9);
-            this.ctx.lineTo(25, 16);
-            this.ctx.lineTo(12, 23);
-            this.ctx.fill();
-          }
-          this.ctx.fillStyle = "#fff"
-          this.ctx.fillText(this.toTime(this.playTick), 38, 14);
-          this.ctx.fillText(this.toTime(this.maxTick), 38, 28);
-          this.ctx.strokeStyle = "#000";
-          this.ctx.beginPath();
-          this.ctx.arc(80 + this.playTick / this.maxTick * 128, 16, 6, 0, 6.28, 0);
-          this.ctx.fill();
-          this.ctx.stroke();
-        }
-        if (this.waitdrop) {
-          this.ctx.fillStyle = "rgba(0,0,0,0.7)"
-          this.ctx.fillRect(0, 0, 300, 32);
-          this.ctx.fillStyle = "#fff";
-          this.ctx.fillText("Drop MIDI File Here", 100, 20);
-        }
-      }
+      this.drawer.update();
     },
-    toTime: (ti)=>{
-      ti = (ti * 4 * 60 / this.song.timebase / this.song.tempo) | 0;
-      const m = (ti / 60) | 0;
-      const s = ti % 60;
-      return ("00" + m).substr(-2) + ":" + ("00" + s).substr(-2);
+    waitsDrop: ()=>{
+      return this.control && this.control.waitdrop;
     },
     loadFile: (f)=>{
       if (this.disabledrop != 0) {
