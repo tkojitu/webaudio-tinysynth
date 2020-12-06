@@ -128,8 +128,8 @@ class Drawer {
 		let ctx = this.canvas.getContext("2d");
 		ctx.fillStyle = "#000";
 		ctx.fillRect(0, 0, 300, 32);
-		var row1 = 8;
-		var row2 = 20;
+		let row1 = 8;
+		let row2 = 20;
 		if (this.synth.song) {
 			row1 = 4;
 			row2 = 24;
@@ -223,10 +223,160 @@ class Drawer {
 	}
 
 	toTime(ti) {
-		ti = (ti * 4 * 60 / this.synth.song.timebase / this.synth.song.tempo) | 0;
-		const m = (ti / 60) | 0;
-		const s = ti % 60;
+		let t = (ti * 4 * 60 / this.synth.song.timebase / this.synth.song.tempo) | 0;
+		const m = (t / 60) | 0;
+		const s = t % 60;
 		return ("00" + m).substr(-2) + ":" + ("00" + s).substr(-2);
+	}
+}
+
+class Loader {
+	constructor() {
+		this.datalen = 0;
+		this.datastart = 0;
+		this.runst = 0;
+	}
+
+	Get2(s, i) {
+		return (s[i] << 8) + s[i + 1];
+	}
+
+	Get3(s, i) {
+		return (s[i] << 16) + (s[i + 1] << 8) + s[i + 2];
+	}
+
+	Get4(s, i) {
+		return (s[i] << 24) + (s[i + 1] << 16) + (s[i + 2] << 8) + s[i + 3];
+	}
+
+	GetStr(s, i, len) {
+		return String.fromCharCode.apply(null, s.slice(i, i + len));
+	}
+
+	Delta(s, i) {
+		let d;
+		let v = 0;
+		this.datalen = 1;
+		while ((d = s[i]) & 0x80) {
+			v = (v << 7) + (d & 0x7f);
+			++this.datalen;
+			++i;
+		}
+		return (v << 7) + d;
+	}
+
+	Msg(song, tick, s, i) {
+		let v = s[i];
+		this.datalen = 1;
+		if ((v & 0x80) == 0) {
+			v = this.runst;
+			this.datalen = 0;
+		}
+		this.runst = v;
+		let len = 0;
+		switch (v & 0xf0) {
+		case 0xc0:
+		case 0xd0:
+			song.ev.push({
+				t: tick,
+				m: [v, s[i + this.datalen]]
+			});
+			this.datalen += 1;
+			break;
+		case 0xf0:
+			switch (v) {
+			case 0xf0:
+			case 0xf7:
+				len = this.Delta(s, i + 1);
+				this.datastart = 1 + this.datalen;
+				let exd = Array.from(s.slice(i + this.datastart, i + this.datastart + len));
+				exd.unshift(0xf0);
+				song.ev.push({
+					t: tick,
+					m: exd
+				});
+				this.datalen += len + 1;
+				break;
+			case 0xff:
+				len = this.Delta(s, i + 2);
+				this.datastart = 2 + this.datalen;
+				this.datalen = len + this.datalen + 2;
+				switch (s[i + 1]) {
+				case 0x02:
+					song.copyright += this.GetStr(s, i + this.datastart, this.datalen - 3);
+					break;
+				case 0x01:
+				case 0x03:
+				case 0x04:
+				case 0x09:
+					song.text = this.GetStr(s, i + this.datastart, this.datalen - this.datastart);
+					break;
+				case 0x2f:
+					return 1;
+				case 0x51:
+					let val = Math.floor(60000000 / this.Get3(s, i + 3));
+					song.ev.push({
+						t: tick,
+						m: [0xff51, val]
+					});
+					break;
+				}
+				break;
+			}
+			break;
+		default:
+			song.ev.push({
+				t: tick,
+				m: [v, s[i + this.datalen], s[i + this.datalen + 1]]
+			});
+			this.datalen += 2;
+		}
+		return 0;
+	}
+
+	load(data) {
+		this.datalen = 0
+		this.datastart = 0
+		this.runst = 0x90;
+		let s = new Uint8Array(data);
+		let hd = s.slice(0,  4);
+		if (hd.toString() != "77,84,104,100")  //MThd
+			return null;
+		let len = this.Get4(s, 4);
+		let fmt = this.Get2(s, 8);
+		let numtrk = this.Get2(s, 10);
+		let tb = this.Get2(s, 12) * 4;
+		let idx = len + 8;
+		let song = {
+			copyright: "",
+			text: "",
+			tempo: 120,
+			timebase: tb,
+			ev: [],
+			maxTick: 0
+		};
+		for (let tr = 0; tr < numtrk; ++tr) {
+			hd = s.slice(idx, idx + 4);
+			len = this.Get4(s, idx + 4);
+			if (hd.toString() == "77,84,114,107") { //MTrk
+				let tick = 0;
+				let j = 0;
+				// this.notetab.length = 0; // BUG?
+				for (;;) {
+					tick += this.Delta(s, idx + 8 + j);
+					j += this.datalen;
+					var e = this.Msg(song, tick, s, idx + 8 + j);
+					j += this.datalen;
+					if (e)
+						break;
+				}
+				if (tick > song.maxTick)
+					song.maxTick = tick;
+			}
+			idx += len + 8;
+		}
+		song.ev.sort(function(x, y) {return x.t - y.t});
+		return song;
 	}
 }
 
@@ -931,139 +1081,9 @@ function WebAudioTinySynthCore(target) {
 			this.playing = 1;
 		},
 		loadMIDI: (data)=>{
-			function Get2(s, i) {
-				return (s[i] << 8) + s[i + 1];
-			}
-			function Get3(s, i) {
-				return (s[i] << 16) + (s[i + 1] << 8) + s[i + 2];
-			}
-			function Get4(s, i) {
-				return (s[i] << 24) + (s[i + 1] << 16) + (s[i + 2] << 8) + s[i + 3];
-			}
-			function GetStr(s, i, len) {
-				return String.fromCharCode.apply(null, s.slice(i, i + len));
-			}
-			function Delta(s, i) {
-				var d;
-				var v = 0;
-				datalen = 1;
-				while ((d = s[i]) & 0x80) {
-					v = (v << 7) + (d & 0x7f);
-					++datalen;
-					++i;
-				}
-				return (v << 7) + d;
-			}
-			function Msg(song, tick, s, i) {
-				var v = s[i];
-				datalen = 1;
-				if ((v & 0x80) == 0) {
-					v = runst;
-					datalen = 0;
-				}
-				runst = v;
-				switch (v & 0xf0) {
-				case 0xc0:
-				case 0xd0:
-					song.ev.push({
-						t: tick,
-						m: [v, s[i + datalen]]
-					});
-					datalen += 1;
-					break;
-				case 0xf0:
-					switch (v) {
-					case 0xf0:
-					case 0xf7:
-						var len = Delta(s, i + 1);
-						datastart = 1 + datalen;
-						var exd = Array.from(s.slice(i + datastart, i + datastart + len));
-						exd.unshift(0xf0);
-						song.ev.push({
-							t: tick,
-							m: exd
-						});
-						datalen += len + 1;
-						break;
-					case 0xff:
-						var len = Delta(s, i + 2);
-						datastart = 2 + datalen;
-						datalen = len + datalen + 2;
-						switch (s[i + 1]) {
-						case 0x02:
-							song.copyright += GetStr(s, i + datastart, datalen - 3);
-							break;
-						case 0x01:
-						case 0x03:
-						case 0x04:
-						case 0x09:
-							song.text = GetStr(s, i + datastart, datalen - datastart);
-							break;
-						case 0x2f:
-							return 1;
-						case 0x51:
-							var val = Math.floor(60000000 / Get3(s, i + 3));
-							song.ev.push({
-								t: tick,
-								m: [0xff51, val]
-							});
-							break;
-						}
-						break;
-					}
-					break;
-				default:
-					song.ev.push({
-						t: tick,
-						m: [v, s[i + datalen], s[i + datalen + 1]]
-					});
-					datalen += 2;
-				}
-				return 0;
-			}
 			this.stopMIDI();
-			var s = new Uint8Array(data);
-			var datalen = 0
-			var datastart = 0
-			var runst = 0x90;
-			var idx = 0;
-			var hd = s.slice(0,  4);
-			if (hd.toString() != "77,84,104,100")  //MThd
-				return;
-			var len = Get4(s, 4);
-			var fmt = Get2(s, 8);
-			var numtrk = Get2(s, 10);
-			this.maxTick = 0;
-			var tb = Get2(s, 12) * 4;
-			idx = len + 8;
-			this.song = {
-				copyright: "",
-				text: "",
-				tempo: 120,
-				timebase: tb,
-				ev: []
-			};
-			for (let tr = 0; tr < numtrk; ++tr) {
-				hd = s.slice(idx, idx + 4);
-				len = Get4(s, idx + 4);
-				if (hd.toString() == "77,84,114,107") { //MTrk
-					var tick = 0;
-					var j = 0;
-					this.notetab.length = 0;
-					for (;;) {
-						tick += Delta(s, idx + 8 + j);
-						j += datalen;
-						var e = Msg(this.song, tick, s, idx + 8 + j);
-						j += datalen;
-						if (e)
-							break;
-					}
-					if (tick > this.maxTick)
-						this.maxTick = tick;
-				}
-				idx += len + 8;
-			}
-			this.song.ev.sort(function(x, y) {return x.t - y.t});
+			this.song = new Loader().load(data);
+			this.maxTick = this.song.maxTick;
 			this.reset();
 			this.locateMIDI(0);
 		},
