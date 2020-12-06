@@ -41,7 +41,7 @@ class Control {
 
   click(e) {
 		const pos = this.getPos(e);
-		if (pos.x < 40 && this.song) {
+		if (pos.x < 40) {
 			this.synth.playOrStop();
 		}
 		if (pos.x >= 215 && pos.x < 243 && this.downpos.x >= 215 && this.downpos.x < 243) {
@@ -189,7 +189,7 @@ class Drawer {
 			ctx.lineWidth = 2;
 			ctx.stroke();
 		}
-		if (this.song) {
+		if (this.synth.song) {
 			ctx.fillStyle = "#fff";
 			ctx.fillRect(4, 2, 28, 28);
 			ctx.fillRect(80, 15, 128, 2);
@@ -681,6 +681,15 @@ function WebAudioTinySynthCore(target) {
     },
     waitsDrop: ()=>{
       return this.control && this.control.waitdrop;
+    },
+    playOrStop: ()=>{
+      if (!this.song) {
+        return;
+      }
+      if (this.playing)
+        this.stopMIDI();
+      else if (this.song)
+        this.playMIDI();
     },
     loadFile: (f)=>{
       if (this.disabledrop != 0) {
