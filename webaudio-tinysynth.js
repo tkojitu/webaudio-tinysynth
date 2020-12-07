@@ -1034,13 +1034,13 @@ function WebAudioTinySynthCore(target) {
 		loadMIDIUrl: (url)=>{
 			if (!url)
 				return;
-			var xhr = new XMLHttpRequest();
+			let xhr = new XMLHttpRequest();
 			xhr.open("GET", url, true);
 			xhr.responseType = "arraybuffer";
 			xhr.loadMIDI = this.loadMIDI.bind(this);
 			xhr.onload = function(e) {
-				if (this.status == 200)
-					this.loadMIDI(this.response);
+				if (xhr.status == 200)
+					xhr.loadMIDI(xhr.response);
 			};
 			xhr.send();
 		},
