@@ -392,6 +392,8 @@ class Loader {
 	}
 
 	loadMIDIUrl(url) {
+		if (!url)
+			return;
 		let xhr = new XMLHttpRequest();
 		xhr.open("GET", url, true);
 		xhr.responseType = "arraybuffer";
@@ -1049,8 +1051,6 @@ function WebAudioTinySynthCore(target) {
 			this.loadMIDIUrl(this.src);
 		},
 		loadMIDIUrl: (url)=>{
-			if (!url)
-				return;
 			this.getLoader().loadMIDIUrl(url);
 		},
 		reset: ()=>{
