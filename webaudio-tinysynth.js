@@ -390,6 +390,18 @@ class Loader {
 		}.bind(this);
 		reader.readAsArrayBuffer(file);
 	}
+
+	loadMIDIUrl(url) {
+		let xhr = new XMLHttpRequest();
+		xhr.open("GET", url, true);
+		xhr.responseType = "arraybuffer";
+		xhr.loadMIDI = this.synth.loadMIDI.bind(this.synth);
+		xhr.onload = function(e) {
+			if (xhr.status == 200)
+				xhr.loadMIDI(xhr.response);
+		};
+		xhr.send();
+	}
 }
 
 function WebAudioTinySynthCore(target) {
@@ -836,7 +848,6 @@ function WebAudioTinySynthCore(target) {
 			if (this.canvas) {
 				this.drawer = new Drawer(this, this.canvas);
 				this.control = new Control(this, this.canvas);
-				this.loader = new Loader(this);
 			}
 		},
 		_guiUpdate: ()=>{
@@ -856,7 +867,13 @@ function WebAudioTinySynthCore(target) {
 		loadFile: (file)=>{
 			if (this.disabledrop != 0)
 				return;
-			this.loader.loadFile(file);
+			this.getLoader().loadFile(file);
+		},
+		getLoader: ()=>{
+			if (this.loader)
+				return this.loader;
+			this.loader = new Loader(this);
+			return this.loader;
 		},
 		/*@@guiEND*/
 		ready: ()=>{
@@ -1034,15 +1051,7 @@ function WebAudioTinySynthCore(target) {
 		loadMIDIUrl: (url)=>{
 			if (!url)
 				return;
-			let xhr = new XMLHttpRequest();
-			xhr.open("GET", url, true);
-			xhr.responseType = "arraybuffer";
-			xhr.loadMIDI = this.loadMIDI.bind(this);
-			xhr.onload = function(e) {
-				if (xhr.status == 200)
-					xhr.loadMIDI(xhr.response);
-			};
-			xhr.send();
+			this.getLoader().loadMIDIUrl(url);
 		},
 		reset: ()=>{
 			for (let i = 0; i < 16; ++i) {
