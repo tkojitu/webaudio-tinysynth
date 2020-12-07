@@ -228,7 +228,7 @@ class Drawer {
 	}
 }
 
-class Loader {
+class SongMaker {
 	constructor() {
 		this.datalen = 0;
 		this.datastart = 0;
@@ -332,7 +332,7 @@ class Loader {
 		return 0;
 	}
 
-	load(data) {
+	make(data) {
 		this.datalen = 0
 		this.datastart = 0
 		this.runst = 0x90;
@@ -1076,7 +1076,7 @@ function WebAudioTinySynthCore(target) {
 		},
 		loadMIDI: (data)=>{
 			this.stopMIDI();
-			this.song = new Loader().load(data);
+			this.song = new SongMaker().make(data);
 			this.maxTick = this.song.maxTick;
 			this.reset();
 			this.locateMIDI(0);
