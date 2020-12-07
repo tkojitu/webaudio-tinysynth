@@ -378,7 +378,7 @@ class SongMaker {
 	}
 }
 
-class Loader {
+class Player {
 	constructor(synth) {
 		this.synth = synth;
 	}
@@ -403,6 +403,15 @@ class Loader {
 				s.loadMIDI(xhr.response);
 		};
 		xhr.send();
+	}
+
+	playOrStop() {
+		if (!this.synth.song)
+			return;
+		if (this.synth.playing)
+			this.synth.stopMIDI();
+		else
+			this.synth.playMIDI();
 	}
 }
 
@@ -859,23 +868,18 @@ function WebAudioTinySynthCore(target) {
 			return this.control && this.control.waitdrop;
 		},
 		playOrStop: ()=>{
-			if (!this.song)
-				return;
-			if (this.playing)
-				this.stopMIDI();
-			else
-				this.playMIDI();
+			this.getPlayer().playOrStop();
 		},
 		loadFile: (file)=>{
 			if (this.disabledrop != 0)
 				return;
-			this.getLoader().loadFile(file);
+			this.getPlayer().loadFile(file);
 		},
-		getLoader: ()=>{
-			if (this.loader)
-				return this.loader;
-			this.loader = new Loader(this);
-			return this.loader;
+		getPlayer: ()=>{
+			if (this.player)
+				return this.player;
+			this.player = new Player(this);
+			return this.player;
 		},
 		/*@@guiEND*/
 		ready: ()=>{
@@ -1051,7 +1055,7 @@ function WebAudioTinySynthCore(target) {
 			this.loadMIDIUrl(this.src);
 		},
 		loadMIDIUrl: (url)=>{
-			this.getLoader().loadMIDIUrl(url);
+			this.getPlayer().loadMIDIUrl(url);
 		},
 		reset: ()=>{
 			for (let i = 0; i < 16; ++i) {
