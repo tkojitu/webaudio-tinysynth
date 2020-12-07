@@ -889,57 +889,54 @@ function WebAudioTinySynthCore(target) {
 			this.rhythm[9] = 1;
 			this.preroll = 0.2;
 			this.relcnt = 0;
-			setInterval(
-				function() {
-					if (++this.relcnt >= 3) {
-						this.relcnt = 0;
-						for (let i = this.notetab.length - 1; i >= 0; --i) {
-							var nt = this.notetab[i];
-							if (this.actx.currentTime > nt.e) {
-								this._pruneNote(nt);
-								this.notetab.splice(i, 1);
-							}
-						}
-						/*@@gui*/
-						/*@@guiEND*/
-					}
-					if (this.playing && this.song.ev.length > 0) {
-						let e = this.song.ev[this.playIndex];
-						while (this.actx.currentTime + this.preroll > this.playTime) {
-							if (e.m[0] == 0xff51) {
-								this.song.tempo = e.m[1];
-								this.tick2Time = 4 * 60 / this.song.tempo / this.song.timebase;
-							}
-							else {
-								this.send(e.m, this.playTime);
-							}
-							++this.playIndex;
-							if (this.playIndex >= this.song.ev.length) {
-								if (this.loop) {
-									e = this.song.ev[this.playIndex = 0];
-									this.playTick = e.t;
-								}
-								else {
-									this.playTick = this.maxTick;
-									this.playing = 0;
-									break;
-								}
-							}
-							else {
-								e = this.song.ev[this.playIndex];
-								this.playTime += (e.t - this.playTick) * this.tick2Time;
-								this.playTick = e.t;
-							}
-						}
-					}
-				}.bind(this), 60
-			);
+			setInterval(this.playLoop.bind(this), 60);
 			console.log("internalcontext:" + this.internalcontext)
 			if (this.internalcontext) {
 				window.AudioContext = window.AudioContext || window.webkitAudioContext;
 				this.setAudioContext(new AudioContext());
 			}
 			this.isReady = 1;
+		},
+		playLoop: ()=>{
+			if (++this.relcnt >= 3) {
+				this.relcnt = 0;
+				for (let i = this.notetab.length - 1; i >= 0; --i) {
+					let nt = this.notetab[i];
+					if (this.actx.currentTime > nt.e) {
+						this._pruneNote(nt);
+						this.notetab.splice(i, 1);
+					}
+				}
+			}
+			if (this.playing && this.song.ev.length > 0) {
+				let e = this.song.ev[this.playIndex];
+				while (this.actx.currentTime + this.preroll > this.playTime) {
+					if (e.m[0] == 0xff51) {
+						this.song.tempo = e.m[1];
+						this.tick2Time = 4 * 60 / this.song.tempo / this.song.timebase;
+					}
+					else {
+						this.send(e.m, this.playTime);
+					}
+					++this.playIndex;
+					if (this.playIndex >= this.song.ev.length) {
+						if (this.loop) {
+							e = this.song.ev[this.playIndex = 0];
+							this.playTick = e.t;
+						}
+						else {
+							this.playTick = this.maxTick;
+							this.playing = 0;
+							break;
+						}
+					}
+					else {
+						e = this.song.ev[this.playIndex];
+						this.playTime += (e.t - this.playTick) * this.tick2Time;
+						this.playTick = e.t;
+					}
+				}
+			}
 		},
 		setMasterVol: (v)=>{
 			if (v != undefined)
@@ -1055,8 +1052,9 @@ function WebAudioTinySynthCore(target) {
 		},
 		stopMIDI: ()=>{
 			this.playing = 0;
-			for (var i = 0; i < 16; ++i)
+			for (var i = 0; i < 16; ++i) {
 				this.allSoundOff(i);
+			}
 		},
 		playMIDI: ()=>{
 			if (!this.song)
