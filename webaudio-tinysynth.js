@@ -395,10 +395,10 @@ class Loader {
 		let xhr = new XMLHttpRequest();
 		xhr.open("GET", url, true);
 		xhr.responseType = "arraybuffer";
-		xhr.loadMIDI = this.synth.loadMIDI.bind(this.synth);
+		let s = this.synth;
 		xhr.onload = function(e) {
 			if (xhr.status == 200)
-				xhr.loadMIDI(xhr.response);
+				s.loadMIDI(xhr.response);
 		};
 		xhr.send();
 	}
