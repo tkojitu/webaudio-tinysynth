@@ -378,6 +378,20 @@ class SongMaker {
 	}
 }
 
+class Loader {
+	constructor(synth) {
+		this.synth = synth;
+	}
+
+	loadFile(file) {
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			this.synth.loadMIDI(reader.result);
+		}.bind(this);
+		reader.readAsArrayBuffer(file);
+	}
+}
+
 function WebAudioTinySynthCore(target) {
 	Object.assign(target, {
 		properties:{
@@ -822,6 +836,7 @@ function WebAudioTinySynthCore(target) {
 			if (this.canvas) {
 				this.drawer = new Drawer(this, this.canvas);
 				this.control = new Control(this, this.canvas);
+				this.loader = new Loader(this);
 			}
 		},
 		_guiUpdate: ()=>{
@@ -838,14 +853,10 @@ function WebAudioTinySynthCore(target) {
 			else
 				this.playMIDI();
 		},
-		loadFile: (f)=>{
+		loadFile: (file)=>{
 			if (this.disabledrop != 0)
 				return;
-			var reader = new FileReader();
-			reader.onload = function(e) {
-				this.loadMIDI(reader.result);
-			}.bind(this);
-			reader.readAsArrayBuffer(f);
+			this.loader.loadFile(file);
 		},
 		/*@@guiEND*/
 		ready: ()=>{
