@@ -41,21 +41,20 @@ class Control {
 
 	click(e) {
 		const pos = this.getPos(e);
-		if (pos.x < 40) {
+		if (pos.x < 40)
 			this.synth.playOrStop();
-		}
-		if (pos.x >= 215 && pos.x < 243 && this.downpos.x >= 215 && this.downpos.x < 243) {
+		if (pos.x >= 215 && pos.x < 243 && this.downpos.x >= 215 && this.downpos.x < 243)
 			this.synth.updateMasterVolume();
-		}
 	}
 
 	getPos(e) {
 		var p = e.target.getBoundingClientRect();
-		if (p.right != p.left)
+		if (p.right != p.left) {
 			return {
 				x: (e.clientX - p.left) * 300 / (p.right - p.left),
 				y: e.clientY - p.top
 			};
+		}
 		return {
 			x: 0,
 			y: 0
@@ -122,9 +121,8 @@ class Drawer {
 	}
 
 	update() {
-		if (!this.canvas) {
+		if (!this.canvas)
 			return;
-		}
 		let ctx = this.canvas.getContext("2d");
 		ctx.fillStyle = "#000";
 		ctx.fillRect(0, 0, 300, 32);
@@ -827,24 +825,22 @@ function WebAudioTinySynthCore(target) {
 			}
 		},
 		_guiUpdate: ()=>{
-			this.drawer.update();
+			this.drawer && this.drawer.update();
 		},
 		waitsDrop: ()=>{
 			return this.control && this.control.waitdrop;
 		},
 		playOrStop: ()=>{
-			if (!this.song) {
+			if (!this.song)
 				return;
-			}
 			if (this.playing)
 				this.stopMIDI();
 			else
 				this.playMIDI();
 		},
 		loadFile: (f)=>{
-			if (this.disabledrop != 0) {
+			if (this.disabledrop != 0)
 				return;
-			}
 			var reader = new FileReader();
 			reader.onload = function(e) {
 				this.loadMIDI(reader.result);
@@ -972,9 +968,8 @@ function WebAudioTinySynthCore(target) {
 			};
 		},
 		locateMIDI: (tick)=>{
-			if (!this.song) {
+			if (!this.song)
 				return;
-			}
 			let i;
 			let p = this.playing;
 			this.stopMIDI();
@@ -1002,7 +997,7 @@ function WebAudioTinySynthCore(target) {
 					}
 					break;
 				case 0xc0:
-					this.pg[m.m[0]&0x0f] = m.m[1];
+					this.pg[m.m[0] & 0x0f] = m.m[1];
 					break;
 				}
 				if (m.m[0] == 0xff51)
@@ -1036,9 +1031,8 @@ function WebAudioTinySynthCore(target) {
 			xhr.responseType = "arraybuffer";
 			xhr.loadMIDI = this.loadMIDI.bind(this);
 			xhr.onload = function(e) {
-				if (this.status == 200) {
+				if (this.status == 200)
 					this.loadMIDI(this.response);
-				}
 			};
 			xhr.send();
 		},
@@ -1399,12 +1393,11 @@ function WebAudioTinySynthCore(target) {
 		},
 		send: (msg, t)=>{    /* send midi message */
 			const ch = msg[0] & 0xf;
-			const cmd  =msg[0] & ~0xf;
+			const cmd  = msg[0] & ~0xf;
 			if (cmd < 0x80 || cmd >= 0x100)
 				return;
-			if (this.audioContext.state == "suspended") {
+			if (this.audioContext.state == "suspended")
 				this.audioContext.resume();
-			}
 			switch (cmd) {
 			case 0xb0:  /* ctl change */
 				switch (msg[1]) {
@@ -1496,12 +1489,10 @@ function WebAudioTinySynthCore(target) {
 				}
 				if (msg[0] == 0xf0) {
 					if (msg[1] == 0x7f && msg[3] == 4) {
-						if (msg[4] == 3 && msg.length >= 8) { // Master Fine Tuning
+						if (msg[4] == 3 && msg.length >= 8) // Master Fine Tuning
 							this.masterTuningF = msg[6] * 0x80 + msg[5] - 8192;
-						}
-						if (msg[4] == 4 && msg.length >= 8) { // Master Coarse Tuning
+						if (msg[4] == 4 && msg.length >= 8) // Master Coarse Tuning
 							this.masterTuningC = msg[6] - 0x40;
-						}
 					}
 					if (msg[1] == 0x41 && msg[3] == 0x42 && msg[4] == 0x12 && msg[5] == 0x40) {
 						if ((msg[6] & 0xf0) == 0x10 && msg[7] == 0x15) {
