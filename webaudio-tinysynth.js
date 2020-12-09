@@ -409,9 +409,36 @@ class Player {
 		if (!this.synth.song)
 			return;
 		if (this.synth.playing)
-			this.synth.stopMIDI();
+			this.stopMIDI();
 		else
-			this.synth.playMIDI();
+			this.playMIDI();
+	}
+
+	stopMIDI() {
+		this.synth.playing = 0;
+		for (let i = 0; i < 16; ++i) {
+			this.synth.allSoundOff(i);
+		}
+	}
+
+	playMIDI() {
+		if (!this.synth.song)
+			return;
+		let actx = this.synth.getAudioContext();
+		if (!actx)
+			return;
+		const dummy = actx.createOscillator();
+		dummy.connect(actx.destination);
+		dummy.frequency.value = 0;
+		dummy.start(0);
+		dummy.stop(actx.currentTime + 0.001);
+		if (this.synth.playTick >= this.synth.maxTick) {
+			this.synth.playTick = 0;
+			this.synth.playIndex = 0;
+		}
+		this.synth.playTime = actx.currentTime + 0.1;
+		this.synth.tick2Time = 4 * 60 / this.synth.song.tempo / this.synth.song.timebase;
+		this.synth.playing = 1;
 	}
 }
 
@@ -1003,7 +1030,7 @@ function WebAudioTinySynthCore(target) {
 				return;
 			let i;
 			let p = this.playing;
-			this.stopMIDI();
+			this.getPlayer().stopMIDI();
 			for (i = 0; i < this.song.ev.length && tick > this.song.ev[i].t; ++i) {
 				var m = this.song.ev[i];
 				var ch = m.m[0] & 0xf;
@@ -1043,7 +1070,7 @@ function WebAudioTinySynthCore(target) {
 				this.playTick = this.song.ev[i].t;
 			}
 			if (p)
-				this.playMIDI();
+				this.getPlayer().playMIDI();
 		},
 		getTimbreName: (m, n)=>{
 			if (m == 0)
@@ -1075,29 +1102,13 @@ function WebAudioTinySynthCore(target) {
 			this.rhythm[9] = 1;
 		},
 		stopMIDI: ()=>{
-			this.playing = 0;
-			for (var i = 0; i < 16; ++i) {
-				this.allSoundOff(i);
-			}
+			this.getPlayer().stopMIDI();
 		},
 		playMIDI: ()=>{
-			if (!this.song)
-				return;
-			const dummy = this.actx.createOscillator();
-			dummy.connect(this.actx.destination);
-			dummy.frequency.value = 0;
-			dummy.start(0);
-			dummy.stop(this.actx.currentTime + 0.001);
-			if (this.playTick >= this.maxTick) {
-				this.playTick = 0;
-				this.playIndex = 0;
-			}
-			this.playTime = this.actx.currentTime + 0.1;
-			this.tick2Time = 4 * 60 / this.song.tempo / this.song.timebase;
-			this.playing = 1;
+			this.getPlayer().playMIDI();
 		},
 		loadMIDI: (data)=>{
-			this.stopMIDI();
+			this.getPlayer().stopMIDI();
 			this.song = new SongMaker().make(data);
 			this.maxTick = this.song.maxTick;
 			this.reset();
