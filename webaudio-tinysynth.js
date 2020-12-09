@@ -440,6 +440,14 @@ class Player {
 		this.synth.tick2Time = 4 * 60 / this.synth.song.tempo / this.synth.song.timebase;
 		this.synth.playing = 1;
 	}
+
+	loadMIDI(data) {
+		this.stopMIDI();
+		this.synth.song = new SongMaker().make(data);
+		this.synth.maxTick = this.synth.song.maxTick;
+		this.synth.reset();
+		this.synth.locateMIDI(0);
+	}
 }
 
 function WebAudioTinySynthCore(target) {
@@ -1108,11 +1116,7 @@ function WebAudioTinySynthCore(target) {
 			this.getPlayer().playMIDI();
 		},
 		loadMIDI: (data)=>{
-			this.getPlayer().stopMIDI();
-			this.song = new SongMaker().make(data);
-			this.maxTick = this.song.maxTick;
-			this.reset();
-			this.locateMIDI(0);
+			this.getPlayer().loadMIDI(data);
 		},
 		setQuality: (q)=>{
 			if (q != undefined)
