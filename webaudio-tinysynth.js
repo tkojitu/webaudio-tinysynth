@@ -48,7 +48,7 @@ class Control {
 	}
 
 	getPos(e) {
-		var p = e.target.getBoundingClientRect();
+		let p = e.target.getBoundingClientRect();
 		if (p.right != p.left) {
 			return {
 				x: (e.clientX - p.left) * 300 / (p.right - p.left),
@@ -363,7 +363,7 @@ class SongMaker {
 				for (;;) {
 					tick += this.Delta(s, idx + 8 + j);
 					j += this.datalen;
-					var e = this.Msg(song, tick, s, idx + 8 + j);
+					let e = this.Msg(song, tick, s, idx + 8 + j);
 					j += this.datalen;
 					if (e)
 						break;
@@ -384,7 +384,7 @@ class Player {
 	}
 
 	loadFile(file) {
-		var reader = new FileReader();
+		let reader = new FileReader();
 		reader.onload = function(e) {
 			this.synth.loadMIDI(reader.result);
 		}.bind(this);
@@ -456,7 +456,7 @@ class Player {
 		let p = this.synth.playing;
 		this.stopMIDI();
 		for (i = 0; i < this.synth.song.ev.length && tick > this.synth.song.ev[i].t; ++i) {
-			var m = this.synth.song.ev[i];
+			let m = this.synth.song.ev[i];
 			this.synth.skipSong(m);
 			if (m.m[0] == 0xff51)
 				this.synth.song.tempo = m.m[1];
@@ -1040,7 +1040,7 @@ function WebAudioTinySynthCore(target) {
 		setReverbLev: (v)=>{
 			if (v != undefined)
 				this.reverbLev = v;
-			var r = parseFloat(this.reverbLev);
+			let r = parseFloat(this.reverbLev);
 			if (this.rev && !isNaN(r))
 				this.rev.gain.value = r * 8;
 		},
@@ -1061,7 +1061,7 @@ function WebAudioTinySynthCore(target) {
 			this.getPlayer().locateMIDI(tick);
 		},
 		skipSong: (m)=>{
-			var ch = m.m[0] & 0xf;
+			let ch = m.m[0] & 0xf;
 			switch (m.m[0] & 0xf0) {
 			case 0xb0:
 				switch (m.m[1]) {
@@ -1201,7 +1201,7 @@ function WebAudioTinySynthCore(target) {
 				return n2.t - n1.t;
 			});
 			for (let i = this.notetab.length - 1; i >= 0; --i) {
-				var nt = this.notetab[i];
+				let nt = this.notetab[i];
 				if (this.actx.currentTime > nt.e || i >= this.voices - 1) {
 					this._pruneNote(nt);
 					this.notetab.splice(i, 1);
@@ -1526,7 +1526,7 @@ function WebAudioTinySynthCore(target) {
 					break;
 				}
 				if (msg[0] != 254 && this.debug) {
-					var ds = [];
+					let ds = [];
 					for (let ii = 0; ii < msg.length; ++ii) {
 						ds.push(msg[ii].toString(16));
 					}
@@ -1568,15 +1568,15 @@ function WebAudioTinySynthCore(target) {
 			console.log("TSDiff:" + this.tsdiff);
 			this.out = this.actx.createGain();
 			this.comp = this.actx.createDynamicsCompressor();
-			var blen = this.actx.sampleRate * 0.5 | 0;
+			let blen = this.actx.sampleRate * 0.5 | 0;
 			this.convBuf = this.actx.createBuffer(2, blen, this.actx.sampleRate);
 			this.noiseBuf = {};
 			this.noiseBuf.n0 = this.actx.createBuffer(1, blen, this.actx.sampleRate);
 			this.noiseBuf.n1 = this.actx.createBuffer(1, blen, this.actx.sampleRate);
-			var d1 = this.convBuf.getChannelData(0);
-			var d2 = this.convBuf.getChannelData(1);
-			var dn = this.noiseBuf.n0.getChannelData(0);
-			var dr = this.noiseBuf.n1.getChannelData(0);
+			let d1 = this.convBuf.getChannelData(0);
+			let d2 = this.convBuf.getChannelData(1);
+			let dn = this.noiseBuf.n0.getChannelData(0);
+			let dr = this.noiseBuf.n1.getChannelData(0);
 			for (let i = 0; i < blen; ++i) {
 				if (i / blen < Math.random()) {
 					d1[i] = Math.exp(-3 * i / blen) * (Math.random() - 0.5) * 0.5;
@@ -1588,7 +1588,7 @@ function WebAudioTinySynthCore(target) {
 				const r1 = Math.random() * 10 + 1;
 				const r2 = Math.random() * 10 + 1;
 				for (let i = 0; i < blen; ++i) {
-					var dd = Math.sin((i / blen) * 2 * Math.PI * 440 * r1) * Math.sin((i / blen) * 2 * Math.PI * 440 * r2);
+					let dd = Math.sin((i / blen) * 2 * Math.PI * 440 * r1) * Math.sin((i / blen) * 2 * Math.PI * 440 * r2);
 					dr[i] += dd / 8;
 				}
 			}
