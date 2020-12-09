@@ -448,6 +448,30 @@ class Player {
 		this.synth.reset();
 		this.synth.locateMIDI(0);
 	}
+
+	locateMIDI(tick) {
+		if (!this.synth.song)
+			return;
+		let i;
+		let p = this.synth.playing;
+		this.stopMIDI();
+		for (i = 0; i < this.synth.song.ev.length && tick > this.synth.song.ev[i].t; ++i) {
+			var m = this.synth.song.ev[i];
+			this.synth.skipSong(m);
+			if (m.m[0] == 0xff51)
+				this.synth.song.tempo = m.m[1];
+		}
+		if (!this.synth.song.ev[i]) {
+			this.synth.playIndex = 0;
+			this.synth.playTick = this.synth.maxTick;
+		}
+		else {
+			this.synth.playIndex = i;
+			this.synth.playTick = this.synth.song.ev[i].t;
+		}
+		if (p)
+			this.playMIDI();
+	}
 }
 
 function WebAudioTinySynthCore(target) {
@@ -1034,51 +1058,34 @@ function WebAudioTinySynthCore(target) {
 			};
 		},
 		locateMIDI: (tick)=>{
-			if (!this.song)
-				return;
-			let i;
-			let p = this.playing;
-			this.getPlayer().stopMIDI();
-			for (i = 0; i < this.song.ev.length && tick > this.song.ev[i].t; ++i) {
-				var m = this.song.ev[i];
-				var ch = m.m[0] & 0xf;
-				switch (m.m[0] & 0xf0) {
-				case 0xb0:
-					switch (m.m[1]) {
-					case 1:
-						this.setModulation(ch, m.m[2]);
-						break;
-					case 7:
-						this.setChVol(ch, m.m[2]);
-						break;
-					case 10:
-						this.setPan(ch, m.m[2]);
-						break;
-					case 11:
-						this.setExpression(ch, m.m[2]);
-						break;
-					case 64:
-						this.setSustain(ch, m.m[2]);
-						break;
-					}
+			this.getPlayer().locateMIDI(tick);
+		},
+		skipSong: (m)=>{
+			var ch = m.m[0] & 0xf;
+			switch (m.m[0] & 0xf0) {
+			case 0xb0:
+				switch (m.m[1]) {
+				case 1:
+					this.setModulation(ch, m.m[2]);
 					break;
-				case 0xc0:
-					this.pg[m.m[0] & 0x0f] = m.m[1];
+				case 7:
+					this.setChVol(ch, m.m[2]);
+					break;
+				case 10:
+					this.setPan(ch, m.m[2]);
+					break;
+				case 11:
+					this.setExpression(ch, m.m[2]);
+					break;
+				case 64:
+					this.setSustain(ch, m.m[2]);
 					break;
 				}
-				if (m.m[0] == 0xff51)
-					this.song.tempo = m.m[1];
+				break;
+			case 0xc0:
+				this.pg[m.m[0] & 0x0f] = m.m[1];
+				break;
 			}
-			if (!this.song.ev[i]) {
-				this.playIndex = 0;
-				this.playTick = this.maxTick;
-			}
-			else {
-				this.playIndex = i;
-				this.playTick = this.song.ev[i].t;
-			}
-			if (p)
-				this.getPlayer().playMIDI();
 		},
 		getTimbreName: (m, n)=>{
 			if (m == 0)
