@@ -993,13 +993,7 @@ function WebAudioTinySynthCore(target) {
 		playLoop: ()=>{
 			if (++this.relcnt >= 3) {
 				this.relcnt = 0;
-				for (let i = this.notetab.length - 1; i >= 0; --i) {
-					let nt = this.notetab[i];
-					if (this.actx.currentTime > nt.e) {
-						this._pruneNote(nt);
-						this.notetab.splice(i, 1);
-					}
-				}
+				this.removeOldNotes();
 			}
 			if (this.playing && this.song.ev.length > 0) {
 				let e = this.song.ev[this.playIndex];
@@ -1030,6 +1024,18 @@ function WebAudioTinySynthCore(target) {
 					}
 				}
 			}
+		},
+		removeOldNotes: ()=>{
+			for (let i = this.notetab.length - 1; i >= 0; --i) {
+				let nt = this.notetab[i];
+				if (this.actx.currentTime > nt.e)
+					this.removeNoteAt(i);
+			}
+		},
+		removeNoteAt: (i)=>{
+			let nt = this.notetab[i];
+			this._pruneNote(nt);
+			this.notetab.splice(i, 1);
 		},
 		setMasterVol: (v)=>{
 			if (v != undefined)
@@ -1200,12 +1206,13 @@ function WebAudioTinySynthCore(target) {
 					return n2.e - n1.e;
 				return n2.t - n1.t;
 			});
+			this.removeOldNotes();
+			this.removeOverflowNotes();
+		},
+		removeOverflowNotes: ()=>{
 			for (let i = this.notetab.length - 1; i >= 0; --i) {
-				let nt = this.notetab[i];
-				if (this.actx.currentTime > nt.e || i >= this.voices - 1) {
-					this._pruneNote(nt);
-					this.notetab.splice(i, 1);
-				}
+				if (i >= this.voices - 1)
+					this.removeNoteAt(i);
 			}
 		},
 		_note: (t, ch, n, v, p)=>{
@@ -1355,10 +1362,8 @@ function WebAudioTinySynthCore(target) {
 		allSoundOff: (ch)=>{
 			for (let i = this.notetab.length - 1; i >= 0; --i) {
 				const nt = this.notetab[i];
-				if (nt.ch == ch) {
-					this._pruneNote(nt);
-					this.notetab.splice(i, 1);
-				}
+				if (nt.ch == ch)
+					this.removeNoteAt(i);
 			}
 		},
 		resetAllControllers: (ch)=>{
