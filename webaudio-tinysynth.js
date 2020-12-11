@@ -68,7 +68,7 @@ class Control {
 		this.downpos = this.getPos(e);
 		if (ev.touches || (e.buttons & 1)) {
 			if (this.downpos.x >= 80 && this.downpos.x <= 208) {
-				const p = (this.downpos.x - 80) / 128 * this.synth.maxTick;
+				const p = (this.downpos.x - 80) / 128 * this.synth.getMaxTick();
 				this.synth.locateMIDI(p);
 				document.body.addEventListener('touchstart', this.preventScroll, false);
 			}
@@ -97,7 +97,7 @@ class Control {
 			if (pos.x >= 70 && pos.x <= 208) {
 				if (pos.x < 80)
 					pos.x = 80;
-				const p = (pos.x - 80) / 128 * this.synth.maxTick;
+				const p = (pos.x - 80) / 128 * this.synth.getMaxTick();
 				this.synth.locateMIDI(p);
 			}
 			if (pos.x >= 250 && pos.x < 282) {
@@ -205,10 +205,10 @@ class Drawer {
 			}
 			ctx.fillStyle = "#fff"
 			ctx.fillText(this.toTime(this.synth.playTick), 38, 14);
-			ctx.fillText(this.toTime(this.synth.maxTick), 38, 28);
+			ctx.fillText(this.toTime(this.synth.getMaxTick()), 38, 28);
 			ctx.strokeStyle = "#000";
 			ctx.beginPath();
-			ctx.arc(80 + this.synth.playTick / this.synth.maxTick * 128, 16, 6, 0, 6.28, 0);
+			ctx.arc(80 + this.synth.playTick / this.synth.getMaxTick() * 128, 16, 6, 0, 6.28, 0);
 			ctx.fill();
 			ctx.stroke();
 		}
@@ -447,7 +447,7 @@ class Player {
 		dummy.frequency.value = 0;
 		dummy.start(0);
 		dummy.stop(actx.currentTime + 0.001);
-		if (this.synth.playTick >= this.synth.maxTick) {
+		if (this.synth.playTick >= this.song.maxTick) {
 			this.synth.playTick = 0;
 			this.synth.playIndex = 0;
 		}
@@ -458,7 +458,6 @@ class Player {
 	loadMIDI(data) {
 		this.stopMIDI();
 		this.song = new SongMaker().make(data);
-		this.synth.maxTick = this.song.maxTick;
 		this.synth.reset();
 		this.locateMIDI(0);
 	}
@@ -477,7 +476,7 @@ class Player {
 		}
 		if (!this.song.ev[i]) {
 			this.synth.playIndex = 0;
-			this.synth.playTick = this.synth.maxTick;
+			this.synth.playTick = this.song.maxTick;
 		}
 		else {
 			this.synth.playIndex = i;
@@ -512,7 +511,7 @@ class Player {
 					this.synth.playTick = e.t;
 				}
 				else {
-					this.synth.playTick = this.synth.maxTick;
+					this.synth.playTick = this.song.maxTick;
 					this.synth.playing = 0;
 					break;
 				}
@@ -532,7 +531,7 @@ class Player {
 	getPlayStatus() {
 		return {
 			play: this.synth.playing,
-			maxTick: this.synth.maxTick,
+			maxTick: this.song.maxTick,
 			curTick: this.synth.playTick
 		};
 	}
@@ -545,6 +544,12 @@ class Player {
 		if (!this.song)
 			return 0;
 		return this.song.calcSeconds(ti);
+	}
+
+	getMaxTick() {
+		if (!this.song)
+			return 0;
+		return this.song.maxTick;
 	}
 }
 
@@ -1039,7 +1044,6 @@ function WebAudioTinySynthCore(target) {
 			this.masterTuningF = 0;
 			this.tuningC = [];
 			this.tuningF = [];
-			this.maxTick = 0;
 			this.playTick = 0;
 			this.playing = 0;
 			this.releaseRatio = 3.5;
@@ -1169,6 +1173,9 @@ function WebAudioTinySynthCore(target) {
 		},
 		calcSeconds: (ti)=>{
 			return this.getPlayer().calcSeconds(ti);
+		},
+		getMaxTick: ()=>{
+			return this.getPlayer().getMaxTick();
 		},
 		setQuality: (q)=>{
 			if (q != undefined)
