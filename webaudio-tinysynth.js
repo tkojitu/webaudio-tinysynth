@@ -128,7 +128,7 @@ class Drawer {
 		ctx.fillRect(0, 0, 300, 32);
 		let row1 = 8;
 		let row2 = 20;
-		if (this.synth.song) {
+		if (this.synth.hasSong()) {
 			row1 = 4;
 			row2 = 24;
 		} else {
@@ -187,7 +187,7 @@ class Drawer {
 			ctx.lineWidth = 2;
 			ctx.stroke();
 		}
-		if (this.synth.song) {
+		if (this.synth.hasSong()) {
 			ctx.fillStyle = "#fff";
 			ctx.fillRect(4, 2, 28, 28);
 			ctx.fillRect(80, 15, 128, 2);
@@ -221,10 +221,29 @@ class Drawer {
 	}
 
 	toTime(ti) {
-		let t = (ti * 4 * 60 / this.synth.song.timebase / this.synth.song.tempo) | 0;
+		let t = this.synth.calcSeconds(ti) | 0;
 		const m = (t / 60) | 0;
 		const s = t % 60;
 		return ("00" + m).substr(-2) + ":" + ("00" + s).substr(-2);
+	}
+}
+
+class Song {
+	constructor(tb) {
+		this.copyright = "";
+		this.text = "";
+		this.tempo = 120;
+		this.timebase = tb;
+		this.ev = [];
+		this.maxTick = 0;
+	}
+
+	calcSeconds(ti) {
+		return ti * this.calcTick2Time();
+	}
+
+	calcTick2Time() {
+		return 4 * 60 / this.tempo / this.timebase;
 	}
 }
 
@@ -345,14 +364,7 @@ class SongMaker {
 		let numtrk = this.Get2(s, 10);
 		let tb = this.Get2(s, 12) * 4;
 		let idx = len + 8;
-		let song = {
-			copyright: "",
-			text: "",
-			tempo: 120,
-			timebase: tb,
-			ev: [],
-			maxTick: 0
-		};
+		let song = new Song(tb);
 		for (let tr = 0; tr < numtrk; ++tr) {
 			hd = s.slice(idx, idx + 4);
 			len = this.Get4(s, idx + 4);
@@ -381,6 +393,7 @@ class SongMaker {
 class Player {
 	constructor(synth) {
 		this.synth = synth;
+		this.song = null;
 		this.loop = 0;
 		setInterval(this.playLoop.bind(this), 60);
 	}
@@ -408,7 +421,7 @@ class Player {
 	}
 
 	playOrStop() {
-		if (!this.synth.song)
+		if (!this.song)
 			return;
 		if (this.synth.playing)
 			this.stopMIDI();
@@ -424,7 +437,7 @@ class Player {
 	}
 
 	playMIDI() {
-		if (!this.synth.song)
+		if (!this.song)
 			return;
 		let actx = this.synth.getAudioContext();
 		if (!actx)
@@ -439,37 +452,36 @@ class Player {
 			this.synth.playIndex = 0;
 		}
 		this.synth.playTime = actx.currentTime + 0.1;
-		this.synth.tick2Time = 4 * 60 / this.synth.song.tempo / this.synth.song.timebase;
 		this.synth.playing = 1;
 	}
 
 	loadMIDI(data) {
 		this.stopMIDI();
-		this.synth.song = new SongMaker().make(data);
-		this.synth.maxTick = this.synth.song.maxTick;
+		this.song = new SongMaker().make(data);
+		this.synth.maxTick = this.song.maxTick;
 		this.synth.reset();
 		this.locateMIDI(0);
 	}
 
 	locateMIDI(tick) {
-		if (!this.synth.song)
+		if (!this.song)
 			return;
 		let i;
 		let p = this.synth.playing;
 		this.stopMIDI();
-		for (i = 0; i < this.synth.song.ev.length && tick > this.synth.song.ev[i].t; ++i) {
-			let m = this.synth.song.ev[i];
+		for (i = 0; i < this.song.ev.length && tick > this.song.ev[i].t; ++i) {
+			let m = this.song.ev[i];
 			this.synth.skipSong(m);
 			if (m.m[0] == 0xff51)
-				this.synth.song.tempo = m.m[1];
+				this.song.tempo = m.m[1];
 		}
-		if (!this.synth.song.ev[i]) {
+		if (!this.song.ev[i]) {
 			this.synth.playIndex = 0;
 			this.synth.playTick = this.synth.maxTick;
 		}
 		else {
 			this.synth.playIndex = i;
-			this.synth.playTick = this.synth.song.ev[i].t;
+			this.synth.playTick = this.song.ev[i].t;
 		}
 		if (p)
 			this.playMIDI();
@@ -482,24 +494,21 @@ class Player {
 		}
 		if (!this.synth.playing)
 			return;
-		if (this.synth.song.ev.length == 0)
+		if (this.song.ev.length == 0)
 			return;
 		let actx = this.synth.getAudioContext();
 		if (!actx)
 			return;
-		let e = this.synth.song.ev[this.synth.playIndex];
+		let e = this.song.ev[this.synth.playIndex];
 		while (actx.currentTime + this.synth.preroll > this.synth.playTime) {
-			if (e.m[0] == 0xff51) {
-				this.synth.song.tempo = e.m[1];
-				this.synth.tick2Time = 4 * 60 / this.synth.song.tempo / this.synth.song.timebase;
-			}
-			else {
+			if (e.m[0] == 0xff51)
+				this.song.tempo = e.m[1];
+			else
 				this.synth.send(e.m, this.synth.playTime);
-			}
 			++this.synth.playIndex;
-			if (this.synth.playIndex >= this.synth.song.ev.length) {
+			if (this.synth.playIndex >= this.song.ev.length) {
 				if (this.loop) {
-					e = this.synth.song.ev[this.synth.playIndex = 0];
+					e = this.song.ev[this.synth.playIndex = 0];
 					this.synth.playTick = e.t;
 				}
 				else {
@@ -509,8 +518,8 @@ class Player {
 				}
 			}
 			else {
-				e = this.synth.song.ev[this.synth.playIndex];
-				this.synth.playTime += (e.t - this.synth.playTick) * this.synth.tick2Time;
+				e = this.song.ev[this.synth.playIndex];
+				this.synth.playTime += this.song.calcSeconds(e.t - this.synth.playTick);
 				this.synth.playTick = e.t;
 			}
 		}
@@ -526,6 +535,16 @@ class Player {
 			maxTick: this.synth.maxTick,
 			curTick: this.synth.playTick
 		};
+	}
+
+	hasSong() {
+		return this.song != null;
+	}
+
+	calcSeconds(ti) {
+		if (!this.song)
+			return 0;
+		return this.song.calcSeconds(ti);
 	}
 }
 
@@ -1144,6 +1163,12 @@ function WebAudioTinySynthCore(target) {
 		},
 		loadMIDI: (data)=>{
 			this.getPlayer().loadMIDI(data);
+		},
+		hasSong: ()=>{
+			return this.getPlayer().hasSong();
+		},
+		calcSeconds: (ti)=>{
+			return this.getPlayer().calcSeconds(ti);
 		},
 		setQuality: (q)=>{
 			if (q != undefined)
