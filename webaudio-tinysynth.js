@@ -509,6 +509,14 @@ class Player {
 			}
 		}
 	}
+
+	getPlayStatus() {
+		return {
+			play: this.synth.playing,
+			maxTick: this.synth.maxTick,
+			curTick: this.synth.playTick
+		};
+	}
 }
 
 function WebAudioTinySynthCore(target) {
@@ -1058,11 +1066,7 @@ function WebAudioTinySynthCore(target) {
 			this.voices = v;
 		},
 		getPlayStatus: ()=>{
-			return {
-				play: this.playing,
-				maxTick: this.maxTick,
-				curTick: this.playTick
-			};
+			return this.getPlayer().getPlayStatus();
 		},
 		locateMIDI: (tick)=>{
 			this.getPlayer().locateMIDI(tick);
