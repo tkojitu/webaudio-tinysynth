@@ -192,7 +192,7 @@ class Drawer {
 			ctx.fillRect(4, 2, 28, 28);
 			ctx.fillRect(80, 15, 128, 2);
 			ctx.fillStyle = "#000";
-			if (this.synth.playing) {
+			if (this.synth.isPlaying()) {
 				ctx.fillRect(12, 10, 4, 12);
 				ctx.fillRect(22, 10, 4, 12);
 			}
@@ -394,6 +394,7 @@ class Player {
 	constructor(synth) {
 		this.synth = synth;
 		this.song = null;
+		this.playing = false;
 		this.loop = 0;
 		setInterval(this.playLoop.bind(this), 60);
 	}
@@ -423,14 +424,14 @@ class Player {
 	playOrStop() {
 		if (!this.song)
 			return;
-		if (this.synth.playing)
+		if (this.playing)
 			this.stopMIDI();
 		else
 			this.playMIDI();
 	}
 
 	stopMIDI() {
-		this.synth.playing = 0;
+		this.playing = false;
 		for (let i = 0; i < 16; ++i) {
 			this.synth.allSoundOff(i);
 		}
@@ -452,7 +453,7 @@ class Player {
 			this.synth.playIndex = 0;
 		}
 		this.synth.playTime = actx.currentTime + 0.1;
-		this.synth.playing = 1;
+		this.playing = true;
 	}
 
 	loadMIDI(data) {
@@ -466,7 +467,7 @@ class Player {
 		if (!this.song)
 			return;
 		let i;
-		let p = this.synth.playing;
+		let p = this.playing;
 		this.stopMIDI();
 		for (i = 0; i < this.song.ev.length && tick > this.song.ev[i].t; ++i) {
 			let m = this.song.ev[i];
@@ -491,7 +492,7 @@ class Player {
 			this.synth.relcnt = 0;
 			this.synth.removeOldNotes();
 		}
-		if (!this.synth.playing)
+		if (!this.playing)
 			return;
 		if (this.song.ev.length == 0)
 			return;
@@ -512,7 +513,7 @@ class Player {
 				}
 				else {
 					this.synth.playTick = this.song.maxTick;
-					this.synth.playing = 0;
+					this.playing = false;
 					break;
 				}
 			}
@@ -530,7 +531,7 @@ class Player {
 
 	getPlayStatus() {
 		return {
-			play: this.synth.playing,
+			play: this.playing,
 			maxTick: this.song.maxTick,
 			curTick: this.synth.playTick
 		};
@@ -550,6 +551,10 @@ class Player {
 		if (!this.song)
 			return 0;
 		return this.song.maxTick;
+	}
+
+	isPlaying() {
+		return this.playing;
 	}
 }
 
@@ -1045,7 +1050,6 @@ function WebAudioTinySynthCore(target) {
 			this.tuningC = [];
 			this.tuningF = [];
 			this.playTick = 0;
-			this.playing = 0;
 			this.releaseRatio = 3.5;
 			for (let i = 0; i < 16; ++i) {
 				this.pg[i] = 0;
@@ -1176,6 +1180,9 @@ function WebAudioTinySynthCore(target) {
 		},
 		getMaxTick: ()=>{
 			return this.getPlayer().getMaxTick();
+		},
+		isPlaying: ()=>{
+			return this.getPlayer().isPlaying();
 		},
 		setQuality: (q)=>{
 			if (q != undefined)
