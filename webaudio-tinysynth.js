@@ -397,6 +397,7 @@ class Player {
 		this.playing = false;
 		this.playTime = 0;
 		this.playTick = 0;
+		this.playIndex = 0;
 		this.loop = 0;
 		this.relcnt = 0;
 		setInterval(this.playLoop.bind(this), 60);
@@ -453,7 +454,7 @@ class Player {
 		dummy.stop(actx.currentTime + 0.001);
 		if (this.playTick >= this.song.maxTick) {
 			this.playTick = 0;
-			this.synth.playIndex = 0;
+			this.playIndex = 0;
 		}
 		this.playTime = actx.currentTime + 0.1;
 		this.playing = true;
@@ -479,11 +480,11 @@ class Player {
 				this.song.tempo = m.m[1];
 		}
 		if (!this.song.ev[i]) {
-			this.synth.playIndex = 0;
+			this.playIndex = 0;
 			this.playTick = this.song.maxTick;
 		}
 		else {
-			this.synth.playIndex = i;
+			this.playIndex = i;
 			this.playTick = this.song.ev[i].t;
 		}
 		if (p)
@@ -502,16 +503,16 @@ class Player {
 		let actx = this.synth.getAudioContext();
 		if (!actx)
 			return;
-		let e = this.song.ev[this.synth.playIndex];
+		let e = this.song.ev[this.playIndex];
 		while (actx.currentTime + this.synth.preroll > this.playTime) {
 			if (e.m[0] == 0xff51)
 				this.song.tempo = e.m[1];
 			else
 				this.synth.send(e.m, this.playTime);
-			++this.synth.playIndex;
-			if (this.synth.playIndex >= this.song.ev.length) {
+			++this.playIndex;
+			if (this.playIndex >= this.song.ev.length) {
 				if (this.loop) {
-					e = this.song.ev[this.synth.playIndex = 0];
+					e = this.song.ev[this.playIndex = 0];
 					this.playTick = e.t;
 				}
 				else {
@@ -521,7 +522,7 @@ class Player {
 				}
 			}
 			else {
-				e = this.song.ev[this.synth.playIndex];
+				e = this.song.ev[this.playIndex];
 				this.playTime += this.song.calcSeconds(e.t - this.playTick);
 				this.playTick = e.t;
 			}
