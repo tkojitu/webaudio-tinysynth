@@ -204,11 +204,11 @@ class Drawer {
 				ctx.fill();
 			}
 			ctx.fillStyle = "#fff"
-			ctx.fillText(this.toTime(this.synth.playTick), 38, 14);
+			ctx.fillText(this.toTime(this.synth.getPlayTick()), 38, 14);
 			ctx.fillText(this.toTime(this.synth.getMaxTick()), 38, 28);
 			ctx.strokeStyle = "#000";
 			ctx.beginPath();
-			ctx.arc(80 + this.synth.playTick / this.synth.getMaxTick() * 128, 16, 6, 0, 6.28, 0);
+			ctx.arc(80 + this.synth.getPlayTick() / this.synth.getMaxTick() * 128, 16, 6, 0, 6.28, 0);
 			ctx.fill();
 			ctx.stroke();
 		}
@@ -395,6 +395,8 @@ class Player {
 		this.synth = synth;
 		this.song = null;
 		this.playing = false;
+		this.playTime = 0;
+		this.playTick = 0;
 		this.loop = 0;
 		this.relcnt = 0;
 		setInterval(this.playLoop.bind(this), 60);
@@ -449,11 +451,11 @@ class Player {
 		dummy.frequency.value = 0;
 		dummy.start(0);
 		dummy.stop(actx.currentTime + 0.001);
-		if (this.synth.playTick >= this.song.maxTick) {
-			this.synth.playTick = 0;
+		if (this.playTick >= this.song.maxTick) {
+			this.playTick = 0;
 			this.synth.playIndex = 0;
 		}
-		this.synth.playTime = actx.currentTime + 0.1;
+		this.playTime = actx.currentTime + 0.1;
 		this.playing = true;
 	}
 
@@ -478,11 +480,11 @@ class Player {
 		}
 		if (!this.song.ev[i]) {
 			this.synth.playIndex = 0;
-			this.synth.playTick = this.song.maxTick;
+			this.playTick = this.song.maxTick;
 		}
 		else {
 			this.synth.playIndex = i;
-			this.synth.playTick = this.song.ev[i].t;
+			this.playTick = this.song.ev[i].t;
 		}
 		if (p)
 			this.playMIDI();
@@ -501,27 +503,27 @@ class Player {
 		if (!actx)
 			return;
 		let e = this.song.ev[this.synth.playIndex];
-		while (actx.currentTime + this.synth.preroll > this.synth.playTime) {
+		while (actx.currentTime + this.synth.preroll > this.playTime) {
 			if (e.m[0] == 0xff51)
 				this.song.tempo = e.m[1];
 			else
-				this.synth.send(e.m, this.synth.playTime);
+				this.synth.send(e.m, this.playTime);
 			++this.synth.playIndex;
 			if (this.synth.playIndex >= this.song.ev.length) {
 				if (this.loop) {
 					e = this.song.ev[this.synth.playIndex = 0];
-					this.synth.playTick = e.t;
+					this.playTick = e.t;
 				}
 				else {
-					this.synth.playTick = this.song.maxTick;
+					this.playTick = this.song.maxTick;
 					this.playing = false;
 					break;
 				}
 			}
 			else {
 				e = this.song.ev[this.synth.playIndex];
-				this.synth.playTime += this.song.calcSeconds(e.t - this.synth.playTick);
-				this.synth.playTick = e.t;
+				this.playTime += this.song.calcSeconds(e.t - this.playTick);
+				this.playTick = e.t;
 			}
 		}
 	}
@@ -534,7 +536,7 @@ class Player {
 		return {
 			play: this.playing,
 			maxTick: this.song.maxTick,
-			curTick: this.synth.playTick
+			curTick: this.playTick
 		};
 	}
 
@@ -556,6 +558,10 @@ class Player {
 
 	isPlaying() {
 		return this.playing;
+	}
+
+	getPlayTick() {
+		return this.playTick;
 	}
 }
 
@@ -1050,7 +1056,6 @@ function WebAudioTinySynthCore(target) {
 			this.masterTuningF = 0;
 			this.tuningC = [];
 			this.tuningF = [];
-			this.playTick = 0;
 			this.releaseRatio = 3.5;
 			for (let i = 0; i < 16; ++i) {
 				this.pg[i] = 0;
@@ -1183,6 +1188,9 @@ function WebAudioTinySynthCore(target) {
 		},
 		isPlaying: ()=>{
 			return this.getPlayer().isPlaying();
+		},
+		getPlayTick: ()=>{
+			return this.getPlayer().getPlayTick();
 		},
 		setQuality: (q)=>{
 			if (q != undefined)
