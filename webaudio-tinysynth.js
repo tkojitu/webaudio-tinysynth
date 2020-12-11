@@ -396,6 +396,7 @@ class Player {
 		this.song = null;
 		this.playing = false;
 		this.loop = 0;
+		this.relcnt = 0;
 		setInterval(this.playLoop.bind(this), 60);
 	}
 
@@ -488,8 +489,8 @@ class Player {
 	}
 
 	playLoop() {
-		if (++this.synth.relcnt >= 3) {
-			this.synth.relcnt = 0;
+		if (++this.relcnt >= 3) {
+			this.relcnt = 0;
 			this.synth.removeOldNotes();
 		}
 		if (!this.playing)
@@ -1062,7 +1063,6 @@ function WebAudioTinySynthCore(target) {
 			}
 			this.rhythm[9] = 1;
 			this.preroll = 0.2;
-			this.relcnt = 0;
 			console.log("internalcontext:" + this.internalcontext)
 			if (this.internalcontext) {
 				window.AudioContext = window.AudioContext || window.webkitAudioContext;
