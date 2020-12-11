@@ -399,10 +399,10 @@ class Player {
 		let xhr = new XMLHttpRequest();
 		xhr.open("GET", url, true);
 		xhr.responseType = "arraybuffer";
-		let s = this.synth;
+		let self = this;
 		xhr.onload = function(e) {
 			if (xhr.status == 200)
-				s.loadMIDI(xhr.response);
+				self.loadMIDI(xhr.response);
 		};
 		xhr.send();
 	}
