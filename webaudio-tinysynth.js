@@ -480,33 +480,38 @@ class Player {
 			this.synth.relcnt = 0;
 			this.synth.removeOldNotes();
 		}
-		if (this.synth.playing && this.synth.song.ev.length > 0) {
-			let e = this.synth.song.ev[this.synth.playIndex];
-			while (this.synth.actx.currentTime + this.synth.preroll > this.synth.playTime) {
-				if (e.m[0] == 0xff51) {
-					this.synth.song.tempo = e.m[1];
-					this.synth.tick2Time = 4 * 60 / this.synth.song.tempo / this.synth.song.timebase;
-				}
-				else {
-					this.synth.send(e.m, this.synth.playTime);
-				}
-				++this.synth.playIndex;
-				if (this.synth.playIndex >= this.synth.song.ev.length) {
-					if (this.loop) {
-						e = this.synth.song.ev[this.synth.playIndex = 0];
-						this.synth.playTick = e.t;
-					}
-					else {
-						this.synth.playTick = this.synth.maxTick;
-						this.synth.playing = 0;
-						break;
-					}
-				}
-				else {
-					e = this.synth.song.ev[this.synth.playIndex];
-					this.synth.playTime += (e.t - this.synth.playTick) * this.synth.tick2Time;
+		if (!this.synth.playing)
+			return;
+		if (this.synth.song.ev.length == 0)
+			return;
+		let actx = this.synth.getAudioContext();
+		if (!actx)
+			return;
+		let e = this.synth.song.ev[this.synth.playIndex];
+		while (actx.currentTime + this.synth.preroll > this.synth.playTime) {
+			if (e.m[0] == 0xff51) {
+				this.synth.song.tempo = e.m[1];
+				this.synth.tick2Time = 4 * 60 / this.synth.song.tempo / this.synth.song.timebase;
+			}
+			else {
+				this.synth.send(e.m, this.synth.playTime);
+			}
+			++this.synth.playIndex;
+			if (this.synth.playIndex >= this.synth.song.ev.length) {
+				if (this.loop) {
+					e = this.synth.song.ev[this.synth.playIndex = 0];
 					this.synth.playTick = e.t;
 				}
+				else {
+					this.synth.playTick = this.synth.maxTick;
+					this.synth.playing = 0;
+					break;
+				}
+			}
+			else {
+				e = this.synth.song.ev[this.synth.playIndex];
+				this.synth.playTime += (e.t - this.synth.playTick) * this.synth.tick2Time;
+				this.synth.playTick = e.t;
 			}
 		}
 	}
