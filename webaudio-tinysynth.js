@@ -381,6 +381,7 @@ class SongMaker {
 class Player {
 	constructor(synth) {
 		this.synth = synth;
+		this.loop = 0;
 		setInterval(this.playLoop.bind(this), 60);
 	}
 
@@ -491,7 +492,7 @@ class Player {
 				}
 				++this.synth.playIndex;
 				if (this.synth.playIndex >= this.synth.song.ev.length) {
-					if (this.synth.loop) {
+					if (this.loop) {
 						e = this.synth.song.ev[this.synth.playIndex = 0];
 						this.synth.playTick = e.t;
 					}
@@ -508,6 +509,10 @@ class Player {
 				}
 			}
 		}
+	}
+
+	setLoop(f) {
+		this.loop = f;
 	}
 
 	getPlayStatus() {
@@ -527,7 +532,6 @@ function WebAudioTinySynthCore(target) {
 			quality:    {type:Number, value:1, observer:"setQuality"},
 			debug:      {type:Number, value:0},
 			src:        {type:String, value:null, observer:"loadMIDIfromSrc"},
-			loop:       {type:Number, value:0},
 			internalcontext: {type:Number, value:1},
 			tsmode:     {type:Number, value:0},
 			voices:     {type:Number, value:64},
@@ -1060,7 +1064,7 @@ function WebAudioTinySynthCore(target) {
 				this.rev.gain.value = r * 8;
 		},
 		setLoop: (f)=>{
-			this.loop = f;
+			this.getPlayer().setLoop(f);
 		},
 		setVoices: (v)=>{
 			this.voices = v;
