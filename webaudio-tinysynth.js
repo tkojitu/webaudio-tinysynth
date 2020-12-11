@@ -381,6 +381,7 @@ class SongMaker {
 class Player {
 	constructor(synth) {
 		this.synth = synth;
+		setInterval(this.playLoop.bind(this), 60);
 	}
 
 	loadFile(file) {
@@ -471,6 +472,42 @@ class Player {
 		}
 		if (p)
 			this.playMIDI();
+	}
+
+	playLoop() {
+		if (++this.synth.relcnt >= 3) {
+			this.synth.relcnt = 0;
+			this.synth.removeOldNotes();
+		}
+		if (this.synth.playing && this.synth.song.ev.length > 0) {
+			let e = this.synth.song.ev[this.synth.playIndex];
+			while (this.synth.actx.currentTime + this.synth.preroll > this.synth.playTime) {
+				if (e.m[0] == 0xff51) {
+					this.synth.song.tempo = e.m[1];
+					this.synth.tick2Time = 4 * 60 / this.synth.song.tempo / this.synth.song.timebase;
+				}
+				else {
+					this.synth.send(e.m, this.synth.playTime);
+				}
+				++this.synth.playIndex;
+				if (this.synth.playIndex >= this.synth.song.ev.length) {
+					if (this.synth.loop) {
+						e = this.synth.song.ev[this.synth.playIndex = 0];
+						this.synth.playTick = e.t;
+					}
+					else {
+						this.synth.playTick = this.synth.maxTick;
+						this.synth.playing = 0;
+						break;
+					}
+				}
+				else {
+					e = this.synth.song.ev[this.synth.playIndex];
+					this.synth.playTime += (e.t - this.synth.playTick) * this.synth.tick2Time;
+					this.synth.playTick = e.t;
+				}
+			}
+		}
 	}
 }
 
@@ -982,48 +1019,12 @@ function WebAudioTinySynthCore(target) {
 			this.rhythm[9] = 1;
 			this.preroll = 0.2;
 			this.relcnt = 0;
-			setInterval(this.playLoop.bind(this), 60);
 			console.log("internalcontext:" + this.internalcontext)
 			if (this.internalcontext) {
 				window.AudioContext = window.AudioContext || window.webkitAudioContext;
 				this.setAudioContext(new AudioContext());
 			}
 			this.isReady = 1;
-		},
-		playLoop: ()=>{
-			if (++this.relcnt >= 3) {
-				this.relcnt = 0;
-				this.removeOldNotes();
-			}
-			if (this.playing && this.song.ev.length > 0) {
-				let e = this.song.ev[this.playIndex];
-				while (this.actx.currentTime + this.preroll > this.playTime) {
-					if (e.m[0] == 0xff51) {
-						this.song.tempo = e.m[1];
-						this.tick2Time = 4 * 60 / this.song.tempo / this.song.timebase;
-					}
-					else {
-						this.send(e.m, this.playTime);
-					}
-					++this.playIndex;
-					if (this.playIndex >= this.song.ev.length) {
-						if (this.loop) {
-							e = this.song.ev[this.playIndex = 0];
-							this.playTick = e.t;
-						}
-						else {
-							this.playTick = this.maxTick;
-							this.playing = 0;
-							break;
-						}
-					}
-					else {
-						e = this.song.ev[this.playIndex];
-						this.playTime += (e.t - this.playTick) * this.tick2Time;
-						this.playTick = e.t;
-					}
-				}
-			}
 		},
 		removeOldNotes: ()=>{
 			for (let i = this.notetab.length - 1; i >= 0; --i) {
