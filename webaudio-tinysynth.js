@@ -387,7 +387,7 @@ class Player {
 	loadFile(file) {
 		let reader = new FileReader();
 		reader.onload = function(e) {
-			this.synth.loadMIDI(reader.result);
+			this.loadMIDI(reader.result);
 		}.bind(this);
 		reader.readAsArrayBuffer(file);
 	}
@@ -447,7 +447,7 @@ class Player {
 		this.synth.song = new SongMaker().make(data);
 		this.synth.maxTick = this.synth.song.maxTick;
 		this.synth.reset();
-		this.synth.locateMIDI(0);
+		this.locateMIDI(0);
 	}
 
 	locateMIDI(tick) {
