@@ -1,6 +1,6 @@
 "use strict";
 
-class Control {
+class EventHandler {
 	constructor(synth, canvas) {
 		this.synth = synth;
 		this.waitdrop = 0;
@@ -536,7 +536,7 @@ class Player {
 	getPlayStatus() {
 		return {
 			play: this.playing,
-			maxTick: this.song.maxTick,
+			maxTick: this.song ? this.song.maxTick : 0,
 			curTick: this.playTick
 		};
 	}
@@ -1008,14 +1008,14 @@ function WebAudioTinySynthCore(target) {
 		_guiInit: ()=>{
 			if (this.canvas) {
 				this.drawer = new Drawer(this, this.canvas);
-				this.control = new Control(this, this.canvas);
+				this.handler = new EventHandler(this, this.canvas);
 			}
 		},
 		_guiUpdate: ()=>{
 			this.drawer && this.drawer.update();
 		},
 		waitsDrop: ()=>{
-			return this.control && this.control.waitdrop;
+			return this.handler && this.handler.waitdrop;
 		},
 		playOrStop: ()=>{
 			this.getPlayer().playOrStop();
