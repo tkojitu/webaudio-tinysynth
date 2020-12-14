@@ -566,6 +566,22 @@ class Player {
 	}
 }
 
+class Controller {
+	constructor(synth) {
+		this.synth = synth;
+		for (let i = 0; i < 16; ++i) {
+			this.synth.pg[i] = 0;
+			this.synth.vol[i] = 3 * 100 * 100 / (127 * 127);
+			this.synth.bend[i] = 0;
+			this.synth.brange[i] = 0x100;
+			this.synth.tuningC[i] = 0;
+			this.synth.tuningF[i] = 0;
+			this.synth.rhythm[i] = 0;
+		}
+		this.synth.rhythm[9] = 1;
+	}
+}
+
 function WebAudioTinySynthCore(target) {
 	Object.assign(target, {
 		properties:{
@@ -1058,16 +1074,7 @@ function WebAudioTinySynthCore(target) {
 			this.tuningC = [];
 			this.tuningF = [];
 			this.releaseRatio = 3.5;
-			for (let i = 0; i < 16; ++i) {
-				this.pg[i] = 0;
-				this.vol[i] = 3 * 100 * 100 / (127 * 127);
-				this.bend[i] = 0;
-				this.brange[i] = 0x100;
-				this.tuningC[i] = 0;
-				this.tuningF[i] = 0;
-				this.rhythm[i] = 0;
-			}
-			this.rhythm[9] = 1;
+			this.controller = new Controller(this);
 			this.preroll = 0.2;
 			console.log("internalcontext:" + this.internalcontext)
 			if (this.internalcontext) {
