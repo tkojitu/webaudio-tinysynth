@@ -566,6 +566,132 @@ class Player {
 	}
 }
 
+class Interpreter {
+	constructor(synth) {
+		this.synth = synth;
+	}
+
+	/* send midi message */
+	interpret(msg, t) {
+		const ch = msg[0] & 0xf;
+		const cmd  = msg[0] & ~0xf;
+		if (cmd < 0x80 || cmd >= 0x100)
+			return;
+		if (this.synth.audioContext.state == "suspended")
+			this.synth.audioContext.resume();
+		switch (cmd) {
+		case 0xb0:  /* ctl change */
+			switch (msg[1]) {
+			case 1:
+				this.synth.setModulation(ch, msg[2], t);
+				break;
+			case 7:
+				this.synth.setChVol(ch, msg[2], t);
+				break;
+			case 10:
+				this.synth.setPan(ch, msg[2], t);
+				break;
+			case 11:
+				this.synth.setExpression(ch, msg[2], t);
+				break;
+			case 64:
+				this.synth.setSustain(ch, msg[2], t);
+				break;
+			case 98:
+			case 99:
+				this.synth.nrpnLsbMsb(ch);
+				break;
+			case 100:
+				this.synth.rpnLsb(ch, msg[2]);
+				break;
+			case 101:
+				this.synth.rpnMsb(ch, msg[2]);
+				break;
+			case 6:  /* data entry msb */
+				switch (this.synth.rpnidx[ch]) {
+					case 0:
+						this.synth.brange[ch] = (msg[2] << 7) + (this.synth.brange[ch] & 0x7f);
+						break;
+					case 1:
+						this.synth.tuningF[ch] = (msg[2] << 7) + ((this.synth.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
+						break;
+					case 2:
+						this.synth.tuningC[ch] = msg[2] - 0x40;
+						break;
+				}
+				break;
+			case 38:  /* data entry lsb */
+				switch (this.synth.rpnidx[ch]) {
+					case 0:
+						this.synth.brange[ch] = (this.synth.brange[ch] & 0x3f80) | msg[2];
+						break;
+					case 1:
+						this.synth.tuningF[ch] = ((this.synth.tuningF[ch] + 0x2000) & 0x3f80) | msg[2] - 0x2000;
+						break;
+					case 2:
+						break;
+				}
+				break;
+			case 120:  /* all sound off */
+			case 123:  /* all notes off */
+			case 124:  /* omni off/on mono/poly */
+			case 125:
+			case 126:
+			case 127:
+				this.synth.allSoundOff(ch);
+				break;
+			case 121:
+				this.synth.resetAllControllers(ch);
+				break;
+			}
+			break;
+		case 0xc0:
+			this.synth.setProgram(ch, msg[1]);
+			break;
+		case 0xe0:
+			this.synth.setBend(ch, (msg[1] + (msg[2] << 7)), t);
+			break;
+		case 0x90:
+			this.synth.noteOn(ch, msg[1], msg[2], t);
+			break;
+		case 0x80:
+			this.synth.noteOff(ch, msg[1], t);
+			break;
+		case 0xf0:
+			if (msg[0] == 0xff) {
+				this.synth.reset();
+				break;
+			}
+			if (msg[0] != 254 && this.synth.debug) {
+				let ds = [];
+				for (let ii = 0; ii < msg.length; ++ii) {
+					ds.push(msg[ii].toString(16));
+				}
+			}
+			if (msg[0] == 0xf0) {
+				if (msg[1] == 0x7f && msg[3] == 4) {
+					if (msg[4] == 3 && msg.length >= 8) // Master Fine Tuning
+						this.synth.masterTuningF = msg[6] * 0x80 + msg[5] - 8192;
+					if (msg[4] == 4 && msg.length >= 8) // Master Coarse Tuning
+						this.synth.masterTuningC = msg[6] - 0x40;
+				}
+				if (msg[1] == 0x41 && msg[3] == 0x42 && msg[4] == 0x12 && msg[5] == 0x40) {
+					if ((msg[6] & 0xf0) == 0x10 && msg[7] == 0x15) {
+						const c = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][msg[6] & 0xf];
+						this.synth.rhythm[c] = msg[8];
+					}
+				}
+			}
+			break;
+		}
+	}
+
+	check() {
+		this.interpret([0x90, 60, 1]);
+		this.interpret([0x90, 60, 0]);
+	}
+}
+
 function WebAudioTinySynthCore(target) {
 	Object.assign(target, {
 		properties:{
@@ -1031,6 +1157,12 @@ function WebAudioTinySynthCore(target) {
 			this.player = new Player(this);
 			return this.player;
 		},
+		getInterpreter: ()=>{
+			if (this.interpreter)
+				return this.interpreter;
+			this.interpreter = new Interpreter(this);
+			return this.interpreter;
+		},
 		/*@@guiEND*/
 		ready: ()=>{
 			return new Promise((resolv)=>{
@@ -1452,9 +1584,8 @@ function WebAudioTinySynthCore(target) {
 				if (this.actx)
 					t = this.actx.currentTime;
 			}
-			else {
-				if (this.tsmode)
-					t = t * 0.001 - this.tsdiff;
+			else if (this.tsmode) {
+				t = t * 0.001 - this.tsdiff;
 			}
 			return t;
 		},
@@ -1502,118 +1633,17 @@ function WebAudioTinySynthCore(target) {
 		setTsMode: (tsmode)=>{
 			this.tsmode = tsmode;
 		},
-		send: (msg, t)=>{    /* send midi message */
-			const ch = msg[0] & 0xf;
-			const cmd  = msg[0] & ~0xf;
-			if (cmd < 0x80 || cmd >= 0x100)
-				return;
-			if (this.audioContext.state == "suspended")
-				this.audioContext.resume();
-			switch (cmd) {
-			case 0xb0:  /* ctl change */
-				switch (msg[1]) {
-				case 1:
-					this.setModulation(ch, msg[2], t);
-					break;
-				case 7:
-					this.setChVol(ch, msg[2], t);
-					break;
-				case 10:
-					this.setPan(ch,msg[2], t);
-					break;
-				case 11:
-					this.setExpression(ch, msg[2], t);
-					break;
-				case 64:
-					this.setSustain(ch, msg[2], t);
-					break;
-				case 98:
-				case 99:
-					this.rpnidx[ch] = 0x3fff;
-					break; /* nrpn lsb/msb */
-				case 100:
-					this.rpnidx[ch] = (this.rpnidx[ch] & 0x3f80) | msg[2];
-					break; /* rpn lsb */
-				case 101:
-					this.rpnidx[ch] = (this.rpnidx[ch] & 0x7f) | (msg[2] << 7);
-					break; /* rpn msb */
-				case 6:  /* data entry msb */
-					switch (this.rpnidx[ch]) {
-						case 0:
-							this.brange[ch] = (msg[2] << 7) + (this.brange[ch] & 0x7f);
-							break;
-						case 1:
-							this.tuningF[ch] = (msg[2] << 7) + ((this.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
-							break;
-						case 2:
-							this.tuningC[ch] = msg[2] - 0x40;
-							break;
-					}
-					break;
-				case 38:  /* data entry lsb */
-					switch (this.rpnidx[ch]) {
-						case 0:
-							this.brange[ch] = (this.brange[ch] & 0x3f80) | msg[2];
-							break;
-						case 1:
-							this.tuningF[ch] = ((this.tuningF[ch] + 0x2000) & 0x3f80) | msg[2] - 0x2000;
-							break;
-						case 2:
-							break;
-					}
-					break;
-				case 120:  /* all sound off */
-				case 123:  /* all notes off */
-				case 124:  /* omni off/on mono/poly */
-				case 125:
-				case 126:
-				case 127:
-					this.allSoundOff(ch);
-					break;
-				case 121:
-					this.resetAllControllers(ch);
-					break;
-				}
-				break;
-			case 0xc0:
-				this.setProgram(ch, msg[1]);
-				break;
-			case 0xe0:
-				this.setBend(ch, (msg[1] + (msg[2] << 7)), t);
-				break;
-			case 0x90:
-				this.noteOn(ch, msg[1], msg[2], t);
-				break;
-			case 0x80:
-				this.noteOff(ch, msg[1], t);
-				break;
-			case 0xf0:
-				if (msg[0] == 0xff) {
-					this.reset();
-					break;
-				}
-				if (msg[0] != 254 && this.debug) {
-					let ds = [];
-					for (let ii = 0; ii < msg.length; ++ii) {
-						ds.push(msg[ii].toString(16));
-					}
-				}
-				if (msg[0] == 0xf0) {
-					if (msg[1] == 0x7f && msg[3] == 4) {
-						if (msg[4] == 3 && msg.length >= 8) // Master Fine Tuning
-							this.masterTuningF = msg[6] * 0x80 + msg[5] - 8192;
-						if (msg[4] == 4 && msg.length >= 8) // Master Coarse Tuning
-							this.masterTuningC = msg[6] - 0x40;
-					}
-					if (msg[1] == 0x41 && msg[3] == 0x42 && msg[4] == 0x12 && msg[5] == 0x40) {
-						if ((msg[6] & 0xf0) == 0x10 && msg[7] == 0x15) {
-							const c = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][msg[6] & 0xf];
-							this.rhythm[c] = msg[8];
-						}
-					}
-				}
-				break;
-			}
+		send: (msg, t)=>{
+			this.getInterpreter().interpret(msg, t);
+		},
+		nrpnLsbMsb: (ch)=>{
+			this.rpnidx[ch] = 0x3fff;
+		},
+		rpnLsb: (ch, value)=>{
+			this.rpnidx[ch] = (this.rpnidx[ch] & 0x3f80) | value;
+		},
+		rpnMsb: (ch, value)=>{
+			this.rpnidx[ch] = (this.rpnidx[ch] & 0x7f) | (value << 7);
 		},
 		_createWave: (w)=>{
 			const imag = new Float32Array(w.length);
@@ -1698,8 +1728,7 @@ function WebAudioTinySynthCore(target) {
 			}
 			this.setReverbLev();
 			this.reset();
-			this.send([0x90, 60, 1]);
-			this.send([0x90, 60, 0]);
+			this.getInterpreter().check();
 		},
 	});
 }
