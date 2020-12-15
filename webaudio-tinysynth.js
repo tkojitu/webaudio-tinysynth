@@ -610,17 +610,8 @@ class Interpreter {
 			case 6:
 				this.synth.dataEntryMsb(ch, msg[2]);
 				break;
-			case 38:  /* data entry lsb */
-				switch (this.synth.rpnidx[ch]) {
-					case 0:
-						this.synth.brange[ch] = (this.synth.brange[ch] & 0x3f80) | msg[2];
-						break;
-					case 1:
-						this.synth.tuningF[ch] = ((this.synth.tuningF[ch] + 0x2000) & 0x3f80) | msg[2] - 0x2000;
-						break;
-					case 2:
-						break;
-				}
+			case 38:
+				this.synth.dataEntryLsb(ch, msg[2]);
 				break;
 			case 120:  /* all sound off */
 			case 123:  /* all notes off */
@@ -1637,15 +1628,27 @@ function WebAudioTinySynthCore(target) {
 		},
 		dataEntryMsb: (ch, value)=>{
 			switch (this.rpnidx[ch]) {
-				case 0:
-					this.brange[ch] = (value << 7) + (this.brange[ch] & 0x7f);
-					break;
-				case 1:
-					this.tuningF[ch] = (value << 7) + ((this.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
-					break;
-				case 2:
-					this.tuningC[ch] = value - 0x40;
-					break;
+			case 0:
+				this.brange[ch] = (value << 7) + (this.brange[ch] & 0x7f);
+				break;
+			case 1:
+				this.tuningF[ch] = (value << 7) + ((this.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
+				break;
+			case 2:
+				this.tuningC[ch] = value - 0x40;
+				break;
+			}
+		},
+		dataEntryLsb: (ch, value)=>{
+			switch (this.rpnidx[ch]) {
+			case 0:
+				this.brange[ch] = (this.brange[ch] & 0x3f80) | value;
+				break;
+			case 1:
+				this.tuningF[ch] = ((this.tuningF[ch] + 0x2000) & 0x3f80) | value - 0x2000;
+				break;
+			case 2:
+				break;
 			}
 		},
 		_createWave: (w)=>{
