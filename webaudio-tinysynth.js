@@ -630,7 +630,7 @@ class Interpreter {
 			this.synth.setProgram(ch, msg[1]);
 			break;
 		case 0xe0:
-			this.synth.setBend(ch, (msg[1] + (msg[2] << 7)), t);
+			this.synth.setBend(ch, msg[1], msg[2], t);
 			break;
 		case 0x90:
 			this.synth.noteOn(ch, msg[1], msg[2], t);
@@ -1570,7 +1570,8 @@ function WebAudioTinySynthCore(target) {
 			}
 			return t;
 		},
-		setBend: (ch, v, t)=>{
+		setBend: (ch, value1, value2, t)=>{
+			let v = value1 + (value2 << 7);
 			t = this._tsConv(t);
 			const br = this.brange[ch] * 100 / 127;
 			this.bend[ch] = (v - 8192) * br / 8192;
