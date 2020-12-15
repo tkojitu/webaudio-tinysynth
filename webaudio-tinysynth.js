@@ -653,8 +653,8 @@ class Interpreter {
 				if (msg[1] == 0x7f && msg[3] == 4) {
 					if (msg[4] == 3 && msg.length >= 8)
 						this.synth.masterFineTuning(msg[5], msg[6]);
-					if (msg[4] == 4 && msg.length >= 8) // Master Coarse Tuning
-						this.synth.masterTuningC = msg[6] - 0x40;
+					if (msg[4] == 4 && msg.length >= 8)
+						this.synth.masterCoarseTuning(msg[6]);
 				}
 				if (msg[1] == 0x41 && msg[3] == 0x42 && msg[4] == 0x12 && msg[5] == 0x40) {
 					if ((msg[6] & 0xf0) == 0x10 && msg[7] == 0x15) {
@@ -1652,8 +1652,11 @@ function WebAudioTinySynthCore(target) {
 				break;
 			}
 		},
-		masterFineTuning: (msg5, msg6)=>{
-			this.masterTuningF = msg6 * 0x80 + msg5 - 8192;
+		masterFineTuning: (value1, value2)=>{
+			this.masterTuningF = value1 + value2 * 0x80 - 8192;
+		},
+		masterCoarseTuning: (value)=>{
+			this.masterTuningC = value - 0x40;
 		},
 		_createWave: (w)=>{
 			const imag = new Float32Array(w.length);
