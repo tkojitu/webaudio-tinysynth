@@ -607,18 +607,8 @@ class Interpreter {
 			case 101:
 				this.synth.rpnMsb(ch, msg[2]);
 				break;
-			case 6:  /* data entry msb */
-				switch (this.synth.rpnidx[ch]) {
-					case 0:
-						this.synth.brange[ch] = (msg[2] << 7) + (this.synth.brange[ch] & 0x7f);
-						break;
-					case 1:
-						this.synth.tuningF[ch] = (msg[2] << 7) + ((this.synth.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
-						break;
-					case 2:
-						this.synth.tuningC[ch] = msg[2] - 0x40;
-						break;
-				}
+			case 6:
+				this.synth.dataEntryMsb(ch, msg[2]);
 				break;
 			case 38:  /* data entry lsb */
 				switch (this.synth.rpnidx[ch]) {
@@ -1644,6 +1634,19 @@ function WebAudioTinySynthCore(target) {
 		},
 		rpnMsb: (ch, value)=>{
 			this.rpnidx[ch] = (this.rpnidx[ch] & 0x7f) | (value << 7);
+		},
+		dataEntryMsb: (ch, value)=>{
+			switch (this.rpnidx[ch]) {
+				case 0:
+					this.brange[ch] = (value << 7) + (this.brange[ch] & 0x7f);
+					break;
+				case 1:
+					this.tuningF[ch] = (value << 7) + ((this.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
+					break;
+				case 2:
+					this.tuningC[ch] = value - 0x40;
+					break;
+			}
 		},
 		_createWave: (w)=>{
 			const imag = new Float32Array(w.length);
