@@ -1176,7 +1176,7 @@ function WebAudioTinySynthCore(target) {
 				this.vol[i] = 3 * 100 * 100 / (127 * 127);
 				this.bend[i] = 0;
 				this.setBendRange(i, 0x100);
-				this.tuningC[i] = 0;
+				this.setCoarseTuning(i, 0);
 				this.setFineTuning(i, 0);
 				this.rhythm[i] = 0;
 			}
@@ -1275,7 +1275,7 @@ function WebAudioTinySynthCore(target) {
 				this.resetAllControllers(i);
 				this.allSoundOff(i);
 				this.rhythm[i] = 0;
-				this.tuningC[i] = 0;
+				this.setCoarseTuning(i, 0);
 				this.setFineTuning(i, 0);
 			}
 			this.masterTuningC = 0;
@@ -1399,7 +1399,7 @@ function WebAudioTinySynthCore(target) {
 			const vp = [];
 			const fp = [];
 			const r = [];
-			const f = 440 * Math.pow(2, (n - 69 + this.masterTuningC + this.tuningC[ch] + (this.masterTuningF + this.getFineTuning(ch)) / 8192) / 12);
+			const f = 440 * Math.pow(2, (n - 69 + this.masterTuningC + this.getCoarseTuning(ch) + (this.masterTuningF + this.getFineTuning(ch)) / 8192) / 12);
 			this._limitVoices(ch, n);
 			for (let i = 0; i < p.length; ++i) {
 				pn = p[i];
@@ -1557,6 +1557,12 @@ function WebAudioTinySynthCore(target) {
 		setBendRange: (ch, v)=>{
 			this.brange[ch] = v;
 		},
+		getCoarseTuning: (ch)=>{
+			return this.tuningC[ch];
+		},
+		setCoarseTuning: (ch, v)=>{
+			this.tuningC[ch] = v;
+		},
 		getFineTuning: (ch)=>{
 			return this.tuningF[ch];
 		},
@@ -1645,7 +1651,7 @@ function WebAudioTinySynthCore(target) {
 				this.setFineTuning(ch, (value << 7) + ((this.getFineTuning(ch) + 0x2000) & 0x7f) - 0x2000);
 				break;
 			case 2:
-				this.tuningC[ch] = value - 0x40;
+				this.setCoarseTuning(ch, value - 0x40);
 				break;
 			}
 		},
