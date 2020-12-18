@@ -1175,7 +1175,7 @@ function WebAudioTinySynthCore(target) {
 				this.pg[i] = 0;
 				this.vol[i] = 3 * 100 * 100 / (127 * 127);
 				this.bend[i] = 0;
-				this.brange[i] = 0x100;
+				this.setBendRange(i, 0x100);
 				this.tuningC[i] = 0;
 				this.tuningF[i] = 0;
 				this.rhythm[i] = 0;
@@ -1551,6 +1551,9 @@ function WebAudioTinySynthCore(target) {
 				this.chmod[ch].gain.value = 0;
 			}
 		},
+		getBendRange: (ch)=>{
+			return this.brange[ch];
+		},
 		setBendRange: (ch, v)=>{
 			this.brange[ch] = v;
 		},
@@ -1573,7 +1576,7 @@ function WebAudioTinySynthCore(target) {
 		setBend: (ch, value1, value2, t)=>{
 			let v = value1 + (value2 << 7);
 			t = this._tsConv(t);
-			const br = this.brange[ch] * 100 / 127;
+			const br = this.getBendRange(ch) * 100 / 127;
 			this.bend[ch] = (v - 8192) * br / 8192;
 			for (let i = this.notetab.length - 1; i >= 0; --i) {
 				const nt = this.notetab[i];
@@ -1630,7 +1633,7 @@ function WebAudioTinySynthCore(target) {
 		dataEntryMsb: (ch, value)=>{
 			switch (this.rpnidx[ch]) {
 			case 0:
-				this.brange[ch] = (value << 7) + (this.brange[ch] & 0x7f);
+				this.setBendRange(ch, (value << 7) + (this.brange[ch] & 0x7f));
 				break;
 			case 1:
 				this.tuningF[ch] = (value << 7) + ((this.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
@@ -1643,7 +1646,7 @@ function WebAudioTinySynthCore(target) {
 		dataEntryLsb: (ch, value)=>{
 			switch (this.rpnidx[ch]) {
 			case 0:
-				this.brange[ch] = (this.brange[ch] & 0x3f80) | value;
+				this.setBendRange(ch, (this.brange[ch] & 0x3f80) | value);
 				break;
 			case 1:
 				this.tuningF[ch] = ((this.tuningF[ch] + 0x2000) & 0x3f80) | value - 0x2000;
