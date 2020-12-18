@@ -569,6 +569,7 @@ class Player {
 class Interpreter {
 	constructor(synth) {
 		this.synth = synth;
+		this.rpnidx = [];
 	}
 
 	/* send midi message */
@@ -599,13 +600,13 @@ class Interpreter {
 				break;
 			case 98:
 			case 99:
-				this.synth.nrpnLsbMsb(ch);
+				this.nrpnLsbMsb(ch);
 				break;
 			case 100:
-				this.synth.rpnLsb(ch, msg[2]);
+				this.rpnLsb(ch, msg[2]);
 				break;
 			case 101:
-				this.synth.rpnMsb(ch, msg[2]);
+				this.rpnMsb(ch, msg[2]);
 				break;
 			case 6:
 				this.synth.dataEntryMsb(ch, msg[2]);
@@ -670,6 +671,45 @@ class Interpreter {
 	check() {
 		this.interpret([0x90, 60, 1]);
 		this.interpret([0x90, 60, 0]);
+	}
+
+	nrpnLsbMsb(ch) {
+		this.rpnidx[ch] = 0x3fff;
+	}
+
+	rpnLsb(ch, value) {
+		this.rpnidx[ch] = (this.rpnidx[ch] & 0x3f80) | value;
+	}
+
+	rpnMsb(ch, value) {
+		this.rpnidx[ch] = (this.rpnidx[ch] & 0x7f) | (value << 7);
+	}
+
+	dataEntryMsb(ch, value) {
+		switch (this.rpnidx[ch]) {
+		case 0:
+			this.synth.setBendRange(ch, (value << 7) + (this.synth.getBendRange(ch) & 0x7f));
+			break;
+		case 1:
+			this.synth.setFineTuning(ch, (value << 7) + ((this.synth.getFineTuning(ch) + 0x2000) & 0x7f) - 0x2000);
+			break;
+		case 2:
+			this.synth.setCoarseTuning(ch, value - 0x40);
+			break;
+		}
+	}
+
+	dataEntryLsb(ch, value) {
+		switch (this.rpnidx[ch]) {
+		case 0:
+			this.synth.setBendRange(ch, (this.synth.getBendRange(ch) & 0x3f80) | value);
+			break;
+		case 1:
+			this.synth.setFineTuning(ch, ((this.synth.getFineTuning(ch) + 0x2000) & 0x3f80) | value - 0x2000);
+			break;
+		case 2:
+			break;
+		}
 	}
 }
 
@@ -1161,7 +1201,6 @@ function WebAudioTinySynthCore(target) {
 			this.vol = [];
 			this.ex = [];
 			this.bend = [];
-			this.rpnidx = [];
 			this.brange = [];
 			this.sustain = [];
 			this.notetab = [];
@@ -1544,7 +1583,7 @@ function WebAudioTinySynthCore(target) {
 		resetAllControllers: (ch)=>{
 			this.bend[ch] = 0;
 			this.ex[ch] = 1.0;
-			this.nrpnLsbMsb(ch);
+			this.getInterpreter().nrpnLsbMsb(ch);
 			this.sustain[ch] = 0;
 			if (this.chvol[ch]) {
 				this.chvol[ch].gain.value = this.vol[ch] * this.ex[ch];
@@ -1632,40 +1671,6 @@ function WebAudioTinySynthCore(target) {
 		},
 		send: (msg, t)=>{
 			this.getInterpreter().interpret(msg, t);
-		},
-		nrpnLsbMsb: (ch)=>{
-			this.rpnidx[ch] = 0x3fff;
-		},
-		rpnLsb: (ch, value)=>{
-			this.rpnidx[ch] = (this.rpnidx[ch] & 0x3f80) | value;
-		},
-		rpnMsb: (ch, value)=>{
-			this.rpnidx[ch] = (this.rpnidx[ch] & 0x7f) | (value << 7);
-		},
-		dataEntryMsb: (ch, value)=>{
-			switch (this.rpnidx[ch]) {
-			case 0:
-				this.setBendRange(ch, (value << 7) + (this.getBendRange(ch) & 0x7f));
-				break;
-			case 1:
-				this.setFineTuning(ch, (value << 7) + ((this.getFineTuning(ch) + 0x2000) & 0x7f) - 0x2000);
-				break;
-			case 2:
-				this.setCoarseTuning(ch, value - 0x40);
-				break;
-			}
-		},
-		dataEntryLsb: (ch, value)=>{
-			switch (this.rpnidx[ch]) {
-			case 0:
-				this.setBendRange(ch, (this.getBendRange(ch) & 0x3f80) | value);
-				break;
-			case 1:
-				this.setFineTuning(ch, ((this.getFineTuning(ch) + 0x2000) & 0x3f80) | value - 0x2000);
-				break;
-			case 2:
-				break;
-			}
 		},
 		_createWave: (w)=>{
 			const imag = new Float32Array(w.length);
