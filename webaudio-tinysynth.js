@@ -1645,7 +1645,7 @@ function WebAudioTinySynthCore(target) {
 		dataEntryMsb: (ch, value)=>{
 			switch (this.rpnidx[ch]) {
 			case 0:
-				this.setBendRange(ch, (value << 7) + (this.brange[ch] & 0x7f));
+				this.setBendRange(ch, (value << 7) + (this.getBendRange(ch) & 0x7f));
 				break;
 			case 1:
 				this.setFineTuning(ch, (value << 7) + ((this.getFineTuning(ch) + 0x2000) & 0x7f) - 0x2000);
@@ -1658,7 +1658,7 @@ function WebAudioTinySynthCore(target) {
 		dataEntryLsb: (ch, value)=>{
 			switch (this.rpnidx[ch]) {
 			case 0:
-				this.setBendRange(ch, (this.brange[ch] & 0x3f80) | value);
+				this.setBendRange(ch, (this.getBendRange(ch) & 0x3f80) | value);
 				break;
 			case 1:
 				this.setFineTuning(ch, ((this.getFineTuning(ch) + 0x2000) & 0x3f80) | value - 0x2000);
