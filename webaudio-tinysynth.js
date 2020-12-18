@@ -1177,7 +1177,7 @@ function WebAudioTinySynthCore(target) {
 				this.bend[i] = 0;
 				this.setBendRange(i, 0x100);
 				this.tuningC[i] = 0;
-				this.tuningF[i] = 0;
+				this.setFineTuning(i, 0);
 				this.rhythm[i] = 0;
 			}
 			this.rhythm[9] = 1;
@@ -1276,7 +1276,7 @@ function WebAudioTinySynthCore(target) {
 				this.allSoundOff(i);
 				this.rhythm[i] = 0;
 				this.tuningC[i] = 0;
-				this.tuningF[i] = 0;
+				this.setFineTuning(i, 0);
 			}
 			this.masterTuningC = 0;
 			this.masterTuningF = 0;
@@ -1399,7 +1399,7 @@ function WebAudioTinySynthCore(target) {
 			const vp = [];
 			const fp = [];
 			const r = [];
-			const f = 440 * Math.pow(2, (n - 69 + this.masterTuningC + this.tuningC[ch] + (this.masterTuningF + this.tuningF[ch]) / 8192) / 12);
+			const f = 440 * Math.pow(2, (n - 69 + this.masterTuningC + this.tuningC[ch] + (this.masterTuningF + this.getFineTuning(ch)) / 8192) / 12);
 			this._limitVoices(ch, n);
 			for (let i = 0; i < p.length; ++i) {
 				pn = p[i];
@@ -1557,6 +1557,12 @@ function WebAudioTinySynthCore(target) {
 		setBendRange: (ch, v)=>{
 			this.brange[ch] = v;
 		},
+		getFineTuning: (ch)=>{
+			return this.tuningF[ch];
+		},
+		setFineTuning: (ch, v)=>{
+			this.tuningF[ch] = v;
+		},
 		setProgram: (ch, v)=>{
 			if (this.debug)
 				console.log("Pg(" + ch + ")=" + v);
@@ -1636,7 +1642,7 @@ function WebAudioTinySynthCore(target) {
 				this.setBendRange(ch, (value << 7) + (this.brange[ch] & 0x7f));
 				break;
 			case 1:
-				this.tuningF[ch] = (value << 7) + ((this.tuningF[ch] + 0x2000) & 0x7f) - 0x2000;
+				this.setFineTuning(ch, (value << 7) + ((this.getFineTuning(ch) + 0x2000) & 0x7f) - 0x2000);
 				break;
 			case 2:
 				this.tuningC[ch] = value - 0x40;
@@ -1649,7 +1655,7 @@ function WebAudioTinySynthCore(target) {
 				this.setBendRange(ch, (this.brange[ch] & 0x3f80) | value);
 				break;
 			case 1:
-				this.tuningF[ch] = ((this.tuningF[ch] + 0x2000) & 0x3f80) | value - 0x2000;
+				this.setFineTuning(ch, ((this.getFineTuning(ch) + 0x2000) & 0x3f80) | value - 0x2000);
 				break;
 			case 2:
 				break;
