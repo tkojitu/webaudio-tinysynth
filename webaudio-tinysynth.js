@@ -1544,7 +1544,7 @@ function WebAudioTinySynthCore(target) {
 		resetAllControllers: (ch)=>{
 			this.bend[ch] = 0;
 			this.ex[ch] = 1.0;
-			this.rpnidx[ch] = 0x3fff;
+			this.nrpnLsbMsb(ch);
 			this.sustain[ch] = 0;
 			if (this.chvol[ch]) {
 				this.chvol[ch].gain.value = this.vol[ch] * this.ex[ch];
