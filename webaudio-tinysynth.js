@@ -1406,7 +1406,7 @@ function WebAudioTinySynthCore(target) {
 				nt.o[k].stop();
 				if (nt.o[k].detune) {
 					try {
-						this.chmod[nt.ch].disconnect(nt.o[k].detune);
+						this.disconnectChmod(nt.ch, nt.o[k].detune);
 					} catch (e) {}
 				}
 				nt.g[k].gain.value = 0;
@@ -1508,7 +1508,7 @@ function WebAudioTinySynthCore(target) {
 				if (this.getRhythm(ch)) {
 					o[i].onended = ()=>{
 							if (o[i].detune)
-								this.chmod[ch].disconnect(o[i].detune);
+								this.disconnectChmod(ch, o[i].detune);
 					};
 					o[i].stop(t + p[0].d * this.releaseRatio);
 				}
@@ -1618,6 +1618,9 @@ function WebAudioTinySynthCore(target) {
 			if (this.debug)
 				console.log("Pg(" + ch + ")=" + v);
 			this.setPg(ch, v);
+		},
+		disconnectChmod: (ch, dest)=>{
+			this.chmod[ch].disconnect(dest);
 		},
 		_tsConv: (t)=>{
 			if (t == undefined || t <= 0) {
