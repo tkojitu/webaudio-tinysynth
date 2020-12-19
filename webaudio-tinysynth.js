@@ -1469,7 +1469,7 @@ function WebAudioTinySynthCore(target) {
 					if (pn.p != 1)
 						this._setParamTarget(o[i].playbackRate, fp[i] / 440 * pn.p, t, pn.q);
 					if (o[i].detune) {
-						this.chmod[ch].connect(o[i].detune);
+						this.connectChmod(ch, o[i].detune);
 						o[i].detune.value = this.getBend(ch);
 					}
 					break;
@@ -1483,7 +1483,7 @@ function WebAudioTinySynthCore(target) {
 					else
 						o[i].type = pn.w;
 					if (o[i].detune) {
-						this.chmod[ch].connect(o[i].detune);
+						this.connectChmod(ch, o[i].detune);
 						o[i].detune.value = this.getBend(ch);
 					}
 					break;
@@ -1548,13 +1548,19 @@ function WebAudioTinySynthCore(target) {
 			nt.f = 1;
 		},
 		setModulation: (ch, v, t)=>{
-			this.chmod[ch].gain.setValueAtTime(v * 100 / 127, this._tsConv(t));
+			this.getChmod(ch).gain.setValueAtTime(v * 100 / 127, this._tsConv(t));
 		},
 		getChvol: (ch)=>{
 			return this.chvol[ch];
 		},
 		createChvol: (ch, actx)=>{
 			this.chvol[ch] = actx.createGain();
+		},
+		getChmod: (ch)=>{
+			return this.chmod[ch];
+		},
+		createChmod: (ch, actx)=>{
+			this.chmod[ch] = actx.createGain();
 		},
 		setChVolAt: (ch, v, t)=>{
 			this.setVol(ch, 3 * v * v / (127 * 127));
@@ -1593,7 +1599,7 @@ function WebAudioTinySynthCore(target) {
 			this.sustain[ch] = 0;
 			if (this.getChvol(ch)) {
 				this.getChvol(ch).gain.value = this.getVol(ch) * this.ex[ch];
-				this.chmod[ch].gain.value = 0;
+				this.getChmod(ch).gain.value = 0;
 			}
 		},
 		getPg: (ch)=>{
@@ -1637,8 +1643,11 @@ function WebAudioTinySynthCore(target) {
 				console.log("Pg(" + ch + ")=" + v);
 			this.setPg(ch, v);
 		},
+		connectChmod: (ch, dest)=>{
+			this.getChmod(ch).connect(dest);
+		},
 		disconnectChmod: (ch, dest)=>{
-			this.chmod[ch].disconnect(dest);
+			this.getChmod(ch).disconnect(dest);
 		},
 		_tsConv: (t)=>{
 			if (t == undefined || t <= 0) {
@@ -1781,8 +1790,8 @@ function WebAudioTinySynthCore(target) {
 					this.chpan[i] = null;
 					this.getChvol(i).connect(this.out);
 				}
-				this.chmod[i] = this.actx.createGain();
-				this.lfo.connect(this.chmod[i]);
+				this.createChmod(i, this.actx);
+				this.lfo.connect(this.getChmod(i));
 				this.setPg(i, 0);
 				this.resetAllControllers(i);
 			}
