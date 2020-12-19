@@ -142,7 +142,7 @@ class Drawer {
 			ctx.fillStyle = "#f00";
 			for (let i = this.synth.notetab.length - 1; i >= 0; --i) {
 				const nt = this.synth.notetab[i];
-				if (!nt.f || this.synth.rhythm[nt.ch]) {
+				if (!nt.f || this.synth.getRhythm(nt.ch)) {
 					ctx.fillRect(80 + nt.n, row1, 4, 4);
 					ctx.fillRect(80 + nt.ch * 8, row2, 6, 4);
 				}
@@ -660,7 +660,7 @@ class Interpreter {
 				if (msg[1] == 0x41 && msg[3] == 0x42 && msg[4] == 0x12 && msg[5] == 0x40) {
 					if ((msg[6] & 0xf0) == 0x10 && msg[7] == 0x15) {
 						const c = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][msg[6] & 0xf];
-						this.synth.rhythm[c] = msg[8];
+						this.synth.setRhythm(c, msg[8]);
 					}
 				}
 			}
@@ -1217,9 +1217,9 @@ function WebAudioTinySynthCore(target) {
 				this.setBendRange(i, 0x100);
 				this.setCoarseTuning(i, 0);
 				this.setFineTuning(i, 0);
-				this.rhythm[i] = 0;
+				this.setRhythm(i, 0);
 			}
-			this.rhythm[9] = 1;
+			this.setRhythm(9, 1);
 			this.preroll = 0.2;
 			console.log("internalcontext:" + this.internalcontext)
 			if (this.internalcontext) {
@@ -1313,13 +1313,13 @@ function WebAudioTinySynthCore(target) {
 				this.setPan(i, 64);
 				this.resetAllControllers(i);
 				this.allSoundOff(i);
-				this.rhythm[i] = 0;
+				this.setRhythm(i, 0);
 				this.setCoarseTuning(i, 0);
 				this.setFineTuning(i, 0);
 			}
 			this.masterTuningC = 0;
 			this.masterTuningF = 0;
-			this.rhythm[9] = 1;
+			this.setRhythm(9, 1);
 		},
 		stopMIDI: ()=>{
 			this.getPlayer().stopMIDI();
@@ -1505,7 +1505,7 @@ function WebAudioTinySynthCore(target) {
 				}
 				this._setParamTarget(g[i].gain, pn.s * vp[i], dt, pn.d);
 				o[i].start(t);
-				if (this.rhythm[ch]) {
+				if (this.getRhythm(ch)) {
 					o[i].onended = ()=>{
 							if (o[i].detune)
 								this.chmod[ch].disconnect(o[i].detune);
@@ -1513,7 +1513,7 @@ function WebAudioTinySynthCore(target) {
 					o[i].stop(t + p[0].d * this.releaseRatio);
 				}
 			}
-			if (!this.rhythm[ch])
+			if (!this.getRhythm(ch))
 				this.notetab.push({
 					t: t,
 					e: 99999,
@@ -1640,8 +1640,14 @@ function WebAudioTinySynthCore(target) {
 				}
 			}
 		},
+		getRhythm: (ch)=>{
+			return this.rhythm[ch];
+		},
+		setRhythm: (ch, v)=>{
+			this.rhythm[ch] = v;
+		},
 		noteOff: (ch, n, t)=>{
-			if (this.rhythm[ch])
+			if (this.getRhythm(ch))
 				return;
 			t = this._tsConv(t);
 			for (let i = this.notetab.length - 1; i >= 0; --i) {
@@ -1659,7 +1665,7 @@ function WebAudioTinySynthCore(target) {
 				return;
 			}
 			t = this._tsConv(t);
-			if (this.rhythm[ch]) {
+			if (this.getRhythm(ch)) {
 				if (n >= 35 && n <= 81)
 					this._note(t, ch, n, v, this.drummap[n - 35].p);
 				return;
