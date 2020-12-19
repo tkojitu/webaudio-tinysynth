@@ -1563,13 +1563,19 @@ function WebAudioTinySynthCore(target) {
 		createChmod: (ch, actx)=>{
 			this.chmod[ch] = actx.createGain();
 		},
+		getChpan: (ch)=>{
+			return this.chpan[ch];
+		},
+		createChpan: (ch, actx)=>{
+			this.chpan[ch] = actx.createStereoPanner();
+		},
 		setChVolAt: (ch, v, t)=>{
 			this.setVol(ch, 3 * v * v / (127 * 127));
 			this.getChvol(ch).gain.setValueAtTime(this.getVol(ch) * this.getEx(ch), this._tsConv(t));
 		},
 		setPan: (ch, v, t)=>{
-			if (this.chpan[ch])
-				this.chpan[ch].pan.setValueAtTime((v - 64) / 64, this._tsConv(t));
+			if (this.getChpan(ch))
+				this.getChpan(ch).pan.setValueAtTime((v - 64) / 64, this._tsConv(t));
 		},
 		setExpression: (ch, v, t)=>{
 			this.setEx(ch, v * v / (127 * 127));
@@ -1795,12 +1801,12 @@ function WebAudioTinySynthCore(target) {
 			for (let i = 0; i < 16; ++i) {
 				this.createChvol(i, this.actx);
 				if (this.actx.createStereoPanner) {
-					this.chpan[i] = this.actx.createStereoPanner();
-					this.getChvol(i).connect(this.chpan[i]);
-					this.chpan[i].connect(this.out);
+					this.createChpan(i, this.actx);
+					this.getChvol(i).connect(this.getChpan(i));
+					this.getChpan(i).connect(this.out);
 				}
 				else {
-					this.chpan[i] = null;
+					this.setChpan(i, null);
 					this.getChvol(i).connect(this.out);
 				}
 				this.createChmod(i, this.actx);
