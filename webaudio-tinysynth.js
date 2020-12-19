@@ -1576,7 +1576,7 @@ function WebAudioTinySynthCore(target) {
 			this.getChvol(ch).gain.setValueAtTime(this.getVol(ch) * this.getEx(ch), this._tsConv(t));
 		},
 		setSustain: (ch, v, t)=>{
-			this.sustain[ch] = v;
+			this.setSus(ch, v);
 			t = this._tsConv(t);
 			if (v < 64) {
 				for (let i = this.notetab.length - 1; i >= 0; --i) {
@@ -1597,7 +1597,7 @@ function WebAudioTinySynthCore(target) {
 			this.setBend(ch, 0);
 			this.setEx(ch, 1.0);
 			this.getInterpreter().nrpnLsbMsb(ch);
-			this.sustain[ch] = 0;
+			this.setSus(ch, 0);
 			if (this.getChvol(ch)) {
 				this.getChvol(ch).gain.value = this.getVol(ch) * this.getEx(ch);
 				this.getChmod(ch).gain.value = 0;
@@ -1632,6 +1632,12 @@ function WebAudioTinySynthCore(target) {
 		},
 		setBendRange: (ch, v)=>{
 			this.brange[ch] = v;
+		},
+		getSus: (ch)=>{
+			return this.sustain[ch];
+		},
+		setSus: (ch, v)=>{
+			this.sustain[ch] = v;
 		},
 		getCoarseTuning: (ch)=>{
 			return this.tuningC[ch];
@@ -1697,7 +1703,7 @@ function WebAudioTinySynthCore(target) {
 				const nt = this.notetab[i];
 				if (t >= nt.t && nt.ch == ch && nt.n == n && nt.f == 0) {
 					nt.f = 1;
-					if (this.sustain[ch] < 64)
+					if (this.getSus(ch) < 64)
 						this._releaseNote(nt, t);
 				}
 			}
