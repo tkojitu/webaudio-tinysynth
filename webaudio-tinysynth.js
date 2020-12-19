@@ -1213,6 +1213,7 @@ function WebAudioTinySynthCore(target) {
 			for (let i = 0; i < 16; ++i) {
 				this.setPg(i, 0);
 				this.setVol(i, 3 * 100 * 100 / (127 * 127));
+				this.setEx(1.0);
 				this.setBend(i, 0);
 				this.setBendRange(i, 0x100);
 				this.setCoarseTuning(i, 0);
@@ -1564,15 +1565,15 @@ function WebAudioTinySynthCore(target) {
 		},
 		setChVolAt: (ch, v, t)=>{
 			this.setVol(ch, 3 * v * v / (127 * 127));
-			this.getChvol(ch).gain.setValueAtTime(this.getVol(ch) * this.ex[ch], this._tsConv(t));
+			this.getChvol(ch).gain.setValueAtTime(this.getVol(ch) * this.getEx(ch), this._tsConv(t));
 		},
 		setPan: (ch, v, t)=>{
 			if (this.chpan[ch])
 				this.chpan[ch].pan.setValueAtTime((v - 64) / 64, this._tsConv(t));
 		},
 		setExpression: (ch, v, t)=>{
-			this.ex[ch] = v * v / (127 * 127);
-			this.getChvol(ch).gain.setValueAtTime(this.getVol(ch) * this.ex[ch], this._tsConv(t));
+			this.setEx(ch, v * v / (127 * 127));
+			this.getChvol(ch).gain.setValueAtTime(this.getVol(ch) * this.getEx(ch), this._tsConv(t));
 		},
 		setSustain: (ch, v, t)=>{
 			this.sustain[ch] = v;
@@ -1594,11 +1595,11 @@ function WebAudioTinySynthCore(target) {
 		},
 		resetAllControllers: (ch)=>{
 			this.setBend(ch, 0);
-			this.ex[ch] = 1.0;
+			this.setEx(ch, 1.0);
 			this.getInterpreter().nrpnLsbMsb(ch);
 			this.sustain[ch] = 0;
 			if (this.getChvol(ch)) {
-				this.getChvol(ch).gain.value = this.getVol(ch) * this.ex[ch];
+				this.getChvol(ch).gain.value = this.getVol(ch) * this.getEx(ch);
 				this.getChmod(ch).gain.value = 0;
 			}
 		},
@@ -1613,6 +1614,12 @@ function WebAudioTinySynthCore(target) {
 		},
 		setVol: (ch, v)=>{
 			this.vol[ch] = v;
+		},
+		getEx: (ch)=>{
+			return this.ex[ch];
+		},
+		setEx: (ch, v)=>{
+			this.ex[ch] = v;
 		},
 		getBend: (ch)=>{
 			return this.bend[ch];
