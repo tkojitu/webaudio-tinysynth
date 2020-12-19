@@ -1212,7 +1212,7 @@ function WebAudioTinySynthCore(target) {
 			this.releaseRatio = 3.5;
 			for (let i = 0; i < 16; ++i) {
 				this.setPg(i, 0);
-				this.vol[i] = 3 * 100 * 100 / (127 * 127);
+				this.setVol(i, 3 * 100 * 100 / (127 * 127));
 				this.bend[i] = 0;
 				this.setBendRange(i, 0x100);
 				this.setCoarseTuning(i, 0);
@@ -1551,8 +1551,8 @@ function WebAudioTinySynthCore(target) {
 			this.chmod[ch].gain.setValueAtTime(v * 100 / 127, this._tsConv(t));
 		},
 		setChVol: (ch, v, t)=>{
-			this.vol[ch] = 3 * v * v / (127 * 127);
-			this.chvol[ch].gain.setValueAtTime(this.vol[ch] * this.ex[ch], this._tsConv(t));
+			this.setVol(ch, 3 * v * v / (127 * 127));
+			this.chvol[ch].gain.setValueAtTime(this.getVol(ch) * this.ex[ch], this._tsConv(t));
 		},
 		setPan: (ch, v, t)=>{
 			if (this.chpan[ch])
@@ -1560,7 +1560,7 @@ function WebAudioTinySynthCore(target) {
 		},
 		setExpression: (ch, v, t)=>{
 			this.ex[ch] = v * v / (127 * 127);
-			this.chvol[ch].gain.setValueAtTime(this.vol[ch] * this.ex[ch], this._tsConv(t));
+			this.chvol[ch].gain.setValueAtTime(this.getVol(ch) * this.ex[ch], this._tsConv(t));
 		},
 		setSustain: (ch, v, t)=>{
 			this.sustain[ch] = v;
@@ -1586,7 +1586,7 @@ function WebAudioTinySynthCore(target) {
 			this.getInterpreter().nrpnLsbMsb(ch);
 			this.sustain[ch] = 0;
 			if (this.chvol[ch]) {
-				this.chvol[ch].gain.value = this.vol[ch] * this.ex[ch];
+				this.chvol[ch].gain.value = this.getVol(ch) * this.ex[ch];
 				this.chmod[ch].gain.value = 0;
 			}
 		},
@@ -1595,6 +1595,12 @@ function WebAudioTinySynthCore(target) {
 		},
 		setPg: (ch, v)=>{
 			this.pg[ch] = v;
+		},
+		getVol: (ch)=>{
+			return this.vol[ch];
+		},
+		setVol: (ch, v)=>{
+			this.vol[ch] = v;
 		},
 		getBendRange: (ch)=>{
 			return this.brange[ch];
