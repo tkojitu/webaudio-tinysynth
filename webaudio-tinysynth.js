@@ -631,7 +631,7 @@ class Interpreter {
 			this.synth.setProgram(ch, msg[1]);
 			break;
 		case 0xe0:
-			this.synth.setBend(ch, msg[1], msg[2], t);
+			this.synth.setBendAtTime(ch, msg[1], msg[2], t);
 			break;
 		case 0x90:
 			this.synth.noteOn(ch, msg[1], msg[2], t);
@@ -1213,7 +1213,7 @@ function WebAudioTinySynthCore(target) {
 			for (let i = 0; i < 16; ++i) {
 				this.setPg(i, 0);
 				this.setVol(i, 3 * 100 * 100 / (127 * 127));
-				this.bend[i] = 0;
+				this.setBend(i, 0);
 				this.setBendRange(i, 0x100);
 				this.setCoarseTuning(i, 0);
 				this.setFineTuning(i, 0);
@@ -1470,7 +1470,7 @@ function WebAudioTinySynthCore(target) {
 						this._setParamTarget(o[i].playbackRate, fp[i] / 440 * pn.p, t, pn.q);
 					if (o[i].detune) {
 						this.chmod[ch].connect(o[i].detune);
-						o[i].detune.value = this.bend[ch];
+						o[i].detune.value = this.getBend(ch);
 					}
 					break;
 				default:
@@ -1484,7 +1484,7 @@ function WebAudioTinySynthCore(target) {
 						o[i].type = pn.w;
 					if (o[i].detune) {
 						this.chmod[ch].connect(o[i].detune);
-						o[i].detune.value = this.bend[ch];
+						o[i].detune.value = this.getBend(ch);
 					}
 					break;
 				}
@@ -1581,7 +1581,7 @@ function WebAudioTinySynthCore(target) {
 			}
 		},
 		resetAllControllers: (ch)=>{
-			this.bend[ch] = 0;
+			this.setBend(ch, 0);
 			this.ex[ch] = 1.0;
 			this.getInterpreter().nrpnLsbMsb(ch);
 			this.sustain[ch] = 0;
@@ -1601,6 +1601,12 @@ function WebAudioTinySynthCore(target) {
 		},
 		setVol: (ch, v)=>{
 			this.vol[ch] = v;
+		},
+		getBend: (ch)=>{
+			return this.bend[ch];
+		},
+		setBend: (ch, v)=>{
+			this.bend[ch] = v;
 		},
 		getBendRange: (ch)=>{
 			return this.brange[ch];
@@ -1639,18 +1645,18 @@ function WebAudioTinySynthCore(target) {
 			}
 			return t;
 		},
-		setBend: (ch, value1, value2, t)=>{
+		setBendAtTime: (ch, value1, value2, t)=>{
 			let v = value1 + (value2 << 7);
 			t = this._tsConv(t);
 			const br = this.getBendRange(ch) * 100 / 127;
-			this.bend[ch] = (v - 8192) * br / 8192;
+			this.setBend(ch, (v - 8192) * br / 8192);
 			for (let i = this.notetab.length - 1; i >= 0; --i) {
 				const nt = this.notetab[i];
 				if (nt.ch == ch) {
 					for (let k = nt.o.length - 1; k >= 0; --k) {
 						if (nt.o[k].frequency)
 							if (nt.o[k].detune)
-								nt.o[k].detune.setValueAtTime(this.bend[ch], t);
+								nt.o[k].detune.setValueAtTime(this.getBend(ch), t);
 					}
 				}
 			}
