@@ -1211,7 +1211,7 @@ function WebAudioTinySynthCore(target) {
 			this.tuningF = [];
 			this.releaseRatio = 3.5;
 			for (let i = 0; i < 16; ++i) {
-				this.pg[i] = 0;
+				this.setPg(i, 0);
 				this.vol[i] = 3 * 100 * 100 / (127 * 127);
 				this.bend[i] = 0;
 				this.setBendRange(i, 0x100);
@@ -1288,7 +1288,7 @@ function WebAudioTinySynthCore(target) {
 				}
 				break;
 			case 0xc0:
-				this.pg[m.m[0] & 0x0f] = m.m[1];
+				this.setPg(m.m[0] & 0x0f, m.m[1]);
 				break;
 			}
 		},
@@ -1590,6 +1590,12 @@ function WebAudioTinySynthCore(target) {
 				this.chmod[ch].gain.value = 0;
 			}
 		},
+		getPg: (ch)=>{
+			return this.pg[ch];
+		},
+		setPg: (ch, v)=>{
+			this.pg[ch] = v;
+		},
 		getBendRange: (ch)=>{
 			return this.brange[ch];
 		},
@@ -1611,7 +1617,7 @@ function WebAudioTinySynthCore(target) {
 		setProgram: (ch, v)=>{
 			if (this.debug)
 				console.log("Pg(" + ch + ")=" + v);
-			this.pg[ch] = v;
+			this.setPg(ch, v);
 		},
 		_tsConv: (t)=>{
 			if (t == undefined || t <= 0) {
@@ -1670,7 +1676,7 @@ function WebAudioTinySynthCore(target) {
 					this._note(t, ch, n, v, this.drummap[n - 35].p);
 				return;
 			}
-			this._note(t, ch, n, v, this.program[this.pg[ch]].p);
+			this._note(t, ch, n, v, this.program[this.getPg(ch)].p);
 		},
 		setTsMode: (tsmode)=>{
 			this.tsmode = tsmode;
@@ -1756,7 +1762,7 @@ function WebAudioTinySynthCore(target) {
 				}
 				this.chmod[i] = this.actx.createGain();
 				this.lfo.connect(this.chmod[i]);
-				this.pg[i] = 0;
+				this.setPg(i, 0);
 				this.resetAllControllers(i);
 			}
 			this.setReverbLev();
