@@ -724,6 +724,9 @@ class Channel {
 		this.rhythm = 0;
 		this.tuningC = 0;
 		this.tuningF = 0;
+		this.chvol = null;
+		this.chmod = null;
+		this.chpan = null;
 	}
 
 	getPg() {
@@ -796,6 +799,40 @@ class Channel {
 
 	setFineTuning(v) {
 		this.tuningF = v;
+	}
+
+	getChvol() {
+		return this.chvol;
+	}
+
+	createChvol(actx) {
+		this.chvol = actx.createGain();
+	}
+
+	getChmod() {
+		return this.chmod;
+	}
+
+	createChmod(actx) {
+		this.chmod = actx.createGain();
+	}
+
+	getChpan() {
+		return this.chpan;
+	}
+
+	createChpan(actx) {
+		this.chpan = actx.createStereoPanner();
+	}
+
+	resetAllControllers() {
+		this.setBend(0);
+		this.setEx(1.0);
+		this.setSus(0);
+		if (this.getChvol()) {
+			this.getChvol().gain.value = this.getVol() * this.getEx();
+			this.getChmod().gain.value = 0;
+		}
 	}
 }
 
@@ -1623,22 +1660,22 @@ function WebAudioTinySynthCore(target) {
 			this.getChmod(ch).gain.setValueAtTime(v * 100 / 127, this._tsConv(t));
 		},
 		getChvol: (ch)=>{
-			return this.chvol[ch];
+			return this.channels[ch].getChvol();
 		},
 		createChvol: (ch, actx)=>{
-			this.chvol[ch] = actx.createGain();
+			this.channels[ch].createChvol(actx);
 		},
 		getChmod: (ch)=>{
-			return this.chmod[ch];
+			return this.channels[ch].getChmod();
 		},
 		createChmod: (ch, actx)=>{
-			this.chmod[ch] = actx.createGain();
+			this.channels[ch].createChmod(actx);
 		},
 		getChpan: (ch)=>{
-			return this.chpan[ch];
+			return this.channels[ch].getChpan();
 		},
 		createChpan: (ch, actx)=>{
-			this.chpan[ch] = actx.createStereoPanner();
+			this.channels[ch].createChpan(actx);
 		},
 		setChVolAt: (ch, v, t)=>{
 			this.setVol(ch, 3 * v * v / (127 * 127));
@@ -1671,14 +1708,8 @@ function WebAudioTinySynthCore(target) {
 			}
 		},
 		resetAllControllers: (ch)=>{
-			this.setBend(ch, 0);
-			this.setEx(ch, 1.0);
+			this.channels[ch].resetAllControllers();
 			this.getInterpreter().nrpnLsbMsb(ch);
-			this.setSus(ch, 0);
-			if (this.getChvol(ch)) {
-				this.getChvol(ch).gain.value = this.getVol(ch) * this.getEx(ch);
-				this.getChmod(ch).gain.value = 0;
-			}
 		},
 		getPg: (ch)=>{
 			return this.channels[ch].getPg();
@@ -1860,9 +1891,6 @@ function WebAudioTinySynthCore(target) {
 			this.setMasterVol();
 			this.out.connect(this.comp);
 			this.comp.connect(this.dest);
-			this.chvol = [];
-			this.chmod = [];
-			this.chpan = [];
 			this.wave = {
 				"w9999": this._createWave("w9999")
 			};
