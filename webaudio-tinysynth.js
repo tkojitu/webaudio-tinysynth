@@ -834,6 +834,23 @@ class Channel {
 			this.getChmod().gain.value = 0;
 		}
 	}
+
+	initWithAudioContext(actx, out, lfo) {
+		this.createChvol(actx);
+		if (actx.createStereoPanner) {
+			this.createChpan(actx);
+			this.getChvol().connect(this.getChpan());
+			this.getChpan().connect(out);
+		}
+		else {
+			this.setChpan(null);
+			this.getChvol().connect(out);
+		}
+		this.createChmod(actx);
+		lfo.connect(this.getChmod());
+		this.setPg(0);
+		this.resetAllControllers();
+	}
 }
 
 function WebAudioTinySynthCore(target) {
@@ -1898,20 +1915,8 @@ function WebAudioTinySynthCore(target) {
 			this.lfo.frequency.value = 5;
 			this.lfo.start(0);
 			for (let i = 0; i < 16; ++i) {
-				this.createChvol(i, this.actx);
-				if (this.actx.createStereoPanner) {
-					this.createChpan(i, this.actx);
-					this.getChvol(i).connect(this.getChpan(i));
-					this.getChpan(i).connect(this.out);
-				}
-				else {
-					this.setChpan(i, null);
-					this.getChvol(i).connect(this.out);
-				}
-				this.createChmod(i, this.actx);
-				this.lfo.connect(this.getChmod(i));
-				this.setPg(i, 0);
-				this.resetAllControllers(i);
+				this.channels[i].initWithAudioContext(this.actx, this.out, this.lfo);
+				this.getInterpreter().nrpnLsbMsb(i);
 			}
 			this.setReverbLev();
 			this.reset();
