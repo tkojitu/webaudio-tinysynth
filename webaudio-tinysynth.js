@@ -713,6 +713,20 @@ class Interpreter {
 	}
 }
 
+class Channel {
+	constructor() {
+		this.pg = 0;
+	}
+
+	getPg() {
+		return this.pg;
+	}
+
+	setPg(v) {
+		this.pg = v;
+	}
+}
+
 function WebAudioTinySynthCore(target) {
 	Object.assign(target, {
 		properties:{
@@ -1197,6 +1211,7 @@ function WebAudioTinySynthCore(target) {
 			});
 		},
 		init: ()=>{
+			this.channels = [];
 			this.pg = [];
 			this.vol = [];
 			this.ex = [];
@@ -1211,7 +1226,7 @@ function WebAudioTinySynthCore(target) {
 			this.tuningF = [];
 			this.releaseRatio = 3.5;
 			for (let i = 0; i < 16; ++i) {
-				this.setPg(i, 0);
+				this.channels[i] = new Channel();
 				this.setVol(i, 3 * 100 * 100 / (127 * 127));
 				this.setEx(1.0);
 				this.setBend(i, 0);
@@ -1610,10 +1625,10 @@ function WebAudioTinySynthCore(target) {
 			}
 		},
 		getPg: (ch)=>{
-			return this.pg[ch];
+			return this.channels[ch].getPg();
 		},
 		setPg: (ch, v)=>{
-			this.pg[ch] = v;
+			this.channels[ch].setPg(v);
 		},
 		getVol: (ch)=>{
 			return this.vol[ch];
