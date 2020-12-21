@@ -851,6 +851,10 @@ class Channel {
 		this.setPg(0);
 		this.resetAllControllers();
 	}
+
+	setModulation(v, t) {
+		this.getChmod().gain.setValueAtTime(v * 100 / 127, t);
+	}
 }
 
 function WebAudioTinySynthCore(target) {
@@ -1674,7 +1678,7 @@ function WebAudioTinySynthCore(target) {
 			nt.f = 1;
 		},
 		setModulation: (ch, v, t)=>{
-			this.getChmod(ch).gain.setValueAtTime(v * 100 / 127, this._tsConv(t));
+			this.channels[ch].setModulation(v, this._tsConv(t));
 		},
 		getChvol: (ch)=>{
 			return this.channels[ch].getChvol();
