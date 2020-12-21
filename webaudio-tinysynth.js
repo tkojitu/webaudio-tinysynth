@@ -870,6 +870,18 @@ class Channel {
 		this.setEx(v * v / (127 * 127));
 		this.getChvol().gain.setValueAtTime(this.getVol() * this.getEx(), t);
 	}
+
+	reset() {
+		this.setPg(0);
+		this.setBendRange(0x100);
+		this.setModulation(0, 0);
+		this.setChVolAt(100, 0);
+		this.setPan(64, 0);
+		this.resetAllControllers();
+		this.setRhythm(0);
+		this.setCoarseTuning(0);
+		this.setFineTuning(0);
+	}
 }
 
 function WebAudioTinySynthCore(target) {
@@ -1451,16 +1463,9 @@ function WebAudioTinySynthCore(target) {
 		},
 		reset: ()=>{
 			for (let i = 0; i < 16; ++i) {
-				this.setProgram(i, 0);
-				this.setBendRange(i, 0x100);
-				this.setModulation(i, 0);
-				this.setChVolAt(i, 100, 0);
-				this.setPan(i, 64);
-				this.resetAllControllers(i);
+				this.channels[i].reset();
+				this.getInterpreter().nrpnLsbMsb(i);
 				this.allSoundOff(i);
-				this.setRhythm(i, 0);
-				this.setCoarseTuning(i, 0);
-				this.setFineTuning(i, 0);
 			}
 			this.masterTuningC = 0;
 			this.masterTuningF = 0;
