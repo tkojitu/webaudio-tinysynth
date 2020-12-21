@@ -855,6 +855,21 @@ class Channel {
 	setModulation(v, t) {
 		this.getChmod().gain.setValueAtTime(v * 100 / 127, t);
 	}
+
+	setChVolAt(v, t) {
+		this.setVol(3 * v * v / (127 * 127));
+		this.getChvol().gain.setValueAtTime(this.getVol() * this.getEx(), t);
+	}
+
+	setPan(v, t) {
+		if (this.getChpan())
+			this.getChpan().pan.setValueAtTime((v - 64) / 64, t);
+	}
+
+	setExpression(v, t) {
+		this.setEx(v * v / (127 * 127));
+		this.getChvol().gain.setValueAtTime(this.getVol() * this.getEx(), t);
+	}
 }
 
 function WebAudioTinySynthCore(target) {
@@ -1699,16 +1714,13 @@ function WebAudioTinySynthCore(target) {
 			this.channels[ch].createChpan(actx);
 		},
 		setChVolAt: (ch, v, t)=>{
-			this.setVol(ch, 3 * v * v / (127 * 127));
-			this.getChvol(ch).gain.setValueAtTime(this.getVol(ch) * this.getEx(ch), this._tsConv(t));
+			this.channels[ch].setChVolAt(v, this._tsConv(t));
 		},
 		setPan: (ch, v, t)=>{
-			if (this.getChpan(ch))
-				this.getChpan(ch).pan.setValueAtTime((v - 64) / 64, this._tsConv(t));
+			this.channels[ch].setPan(v, this._tsConv(t));
 		},
 		setExpression: (ch, v, t)=>{
-			this.setEx(ch, v * v / (127 * 127));
-			this.getChvol(ch).gain.setValueAtTime(this.getVol(ch) * this.getEx(ch), this._tsConv(t));
+			this.channels[ch].setExpression(v, this._tsConv(t));
 		},
 		setSustain: (ch, v, t)=>{
 			this.setSus(ch, v);
