@@ -114,12 +114,6 @@ class Drawer {
 		this.canvas = canvas;
 	}
 
-	init() {
-		let ctx = this.canvas.getContext("2d");
-		ctx.fillStyle = "#000";
-		ctx.fillRect(0, 0, 300, 32);
-	}
-
 	update() {
 		if (!this.canvas)
 			return;
