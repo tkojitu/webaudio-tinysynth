@@ -716,6 +716,14 @@ class Interpreter {
 class Channel {
 	constructor() {
 		this.pg = 0;
+		this.vol = 3 * 100 * 100 / (127 * 127);
+		this.ex = 1.0;
+		this.bend = 0;
+		this.brange = 0x100;
+		this.sustain = 0;
+		this.rhythm = 0;
+		this.tuningC = 0;
+		this.tuningF = 0;
 	}
 
 	getPg() {
@@ -724,6 +732,70 @@ class Channel {
 
 	setPg(v) {
 		this.pg = v;
+	}
+
+	getVol() {
+		return this.vol;
+	}
+
+	setVol(v) {
+		this.vol = v;
+	}
+
+	getEx() {
+		return this.ex;
+	}
+
+	setEx(v) {
+		this.ex = v;
+	}
+
+	getBend() {
+		return this.bend;
+	}
+
+	setBend(v) {
+		this.bend = v;
+	}
+
+	getBendRange() {
+		return this.brange;
+	}
+
+	setBendRange(v) {
+		this.brange = v;
+	}
+
+	getSus() {
+		return this.sustain;
+	}
+
+	setSus(v) {
+		this.sustain = v;
+	}
+
+	getRhythm() {
+		return this.rhythm;
+	}
+
+	setRhythm(v) {
+		this.rhythm = v;
+	}
+
+	getCoarseTuning() {
+		return this.tuningC;
+	}
+
+	setCoarseTuning(v) {
+		this.tuningC = v;
+	}
+
+	getFineTuning() {
+		return this.tuningF;
+	}
+
+	setFineTuning(v) {
+		this.tuningF = v;
 	}
 }
 
@@ -1212,28 +1284,12 @@ function WebAudioTinySynthCore(target) {
 		},
 		init: ()=>{
 			this.channels = [];
-			this.pg = [];
-			this.vol = [];
-			this.ex = [];
-			this.bend = [];
-			this.brange = [];
-			this.sustain = [];
 			this.notetab = [];
-			this.rhythm = [];
 			this.masterTuningC = 0;
 			this.masterTuningF = 0;
-			this.tuningC = [];
-			this.tuningF = [];
 			this.releaseRatio = 3.5;
 			for (let i = 0; i < 16; ++i) {
 				this.channels[i] = new Channel();
-				this.setVol(i, 3 * 100 * 100 / (127 * 127));
-				this.setEx(1.0);
-				this.setBend(i, 0);
-				this.setBendRange(i, 0x100);
-				this.setCoarseTuning(i, 0);
-				this.setFineTuning(i, 0);
-				this.setRhythm(i, 0);
 			}
 			this.setRhythm(9, 1);
 			this.preroll = 0.2;
@@ -1631,46 +1687,52 @@ function WebAudioTinySynthCore(target) {
 			this.channels[ch].setPg(v);
 		},
 		getVol: (ch)=>{
-			return this.vol[ch];
+			return this.channels[ch].getVol();
 		},
 		setVol: (ch, v)=>{
-			this.vol[ch] = v;
+			this.channels[ch].setVol(v);
 		},
 		getEx: (ch)=>{
-			return this.ex[ch];
+			return this.channels[ch].getEx();
 		},
 		setEx: (ch, v)=>{
-			this.ex[ch] = v;
+			this.channels[ch].setEx(v);
 		},
 		getBend: (ch)=>{
-			return this.bend[ch];
+			return this.channels[ch].getBend();
 		},
 		setBend: (ch, v)=>{
-			this.bend[ch] = v;
+			this.channels[ch].setBend(v);
 		},
 		getBendRange: (ch)=>{
-			return this.brange[ch];
+			return this.channels[ch].getBendRange();
 		},
 		setBendRange: (ch, v)=>{
-			this.brange[ch] = v;
+			this.channels[ch].setBendRange(v);
 		},
 		getSus: (ch)=>{
-			return this.sustain[ch];
+			return this.channels[ch].getSus();
 		},
 		setSus: (ch, v)=>{
-			this.sustain[ch] = v;
+			this.channels[ch].setSus(v);
+		},
+		getRhythm: (ch)=>{
+			return this.channels[ch].getRhythm();
+		},
+		setRhythm: (ch, v)=>{
+			this.channels[ch].setRhythm(v);
 		},
 		getCoarseTuning: (ch)=>{
-			return this.tuningC[ch];
+			return this.channels[ch].getCoarseTuning();
 		},
 		setCoarseTuning: (ch, v)=>{
-			this.tuningC[ch] = v;
+			this.channels[ch].setCoarseTuning(v);
 		},
 		getFineTuning: (ch)=>{
-			return this.tuningF[ch];
+			return this.channels[ch].getFineTuning();
 		},
 		setFineTuning: (ch, v)=>{
-			this.tuningF[ch] = v;
+			this.channels[ch].setFineTuning(v);
 		},
 		setProgram: (ch, v)=>{
 			if (this.debug)
@@ -1709,12 +1771,6 @@ function WebAudioTinySynthCore(target) {
 					}
 				}
 			}
-		},
-		getRhythm: (ch)=>{
-			return this.rhythm[ch];
-		},
-		setRhythm: (ch, v)=>{
-			this.rhythm[ch] = v;
 		},
 		noteOff: (ch, n, t)=>{
 			if (this.getRhythm(ch))
