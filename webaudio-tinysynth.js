@@ -365,7 +365,7 @@ class SongMaker {
 			if (hd.toString() == "77,84,114,107") { //MTrk
 				let tick = 0;
 				let j = 0;
-				this.notetab.length = 0;
+				// this.notetab.length = 0; // BUG?
 				for (;;) {
 					tick += this.Delta(s, idx + 8 + j);
 					j += this.datalen;
