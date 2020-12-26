@@ -889,6 +889,7 @@ class Note {
 		this.r = r;
 		this.e = 99999;
 		this.f = 0;
+		this.chmod = null;
 	}
 }
 
@@ -1566,7 +1567,7 @@ function WebAudioTinySynthCore(target) {
 				nt.g[k].gain.value = 0;
 			}
 		},
-		_limitVoices: (ch, n)=>{
+		_limitVoices: ()=>{
 			this.notetab.sort(function(n1, n2) {
 				if (n1.f != n2.f)
 					return n1.f - n2.f;
@@ -1593,7 +1594,7 @@ function WebAudioTinySynthCore(target) {
 			const fp = [];
 			const r = [];
 			const f = 440 * Math.pow(2, (n - 69 + this.masterTuningC + this.getCoarseTuning(ch) + (this.masterTuningF + this.getFineTuning(ch)) / 8192) / 12);
-			this._limitVoices(ch, n);
+			this._limitVoices();
 			for (let i = 0; i < p.length; ++i) {
 				pn = p[i];
 				const dt = t + pn.a + pn.h;
