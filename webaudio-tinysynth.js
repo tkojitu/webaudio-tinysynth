@@ -1677,7 +1677,7 @@ function WebAudioTinySynthCore(target) {
 				p.setValueAtTime(v, t);
 		},
 		_releaseNote: (nt, t)=>{
-			if (nt.ch != 9) {
+			if (!this.getRhythm(nt.ch)) {
 				for (let k = nt.g.length - 1; k >= 0; --k) {
 					nt.g[k].gain.cancelScheduledValues(t);
 					if (t == nt.t2)
