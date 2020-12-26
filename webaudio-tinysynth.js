@@ -877,6 +877,21 @@ class Channel {
 	}
 }
 
+class Note {
+	constructor(t, ch, n, o, g, t2, v, r) {
+		this.t = t;
+		this.ch = ch;
+		this.n = n;
+		this.o = o;
+		this.g = g;
+		this.t2 = t2;
+		this.v = v;
+		this.r = r;
+		this.e = 99999;
+		this.f = 0;
+	}
+}
+
 function WebAudioTinySynthCore(target) {
 	Object.assign(target, {
 		properties:{
@@ -1547,11 +1562,7 @@ function WebAudioTinySynthCore(target) {
 				}
 				nt.g[k].gain.cancelScheduledValues(0);
 				nt.o[k].stop();
-				if (nt.o[k].detune) {
-					try {
-						this.disconnectChmod(nt.ch, nt.o[k].detune);
-					} catch (e) {}
-				}
+				this.disconnectChmod(nt.ch, nt.o[k].detune);
 				nt.g[k].gain.value = 0;
 			}
 		},
@@ -1650,25 +1661,13 @@ function WebAudioTinySynthCore(target) {
 				o[i].start(t);
 				if (this.getRhythm(ch)) {
 					o[i].onended = ()=>{
-							if (o[i].detune)
-								this.disconnectChmod(ch, o[i].detune);
+							this.disconnectChmod(ch, o[i].detune);
 					};
 					o[i].stop(t + p[0].d * this.releaseRatio);
 				}
 			}
 			if (!this.getRhythm(ch))
-				this.notetab.push({
-					t: t,
-					e: 99999,
-					ch: ch,
-					n: n,
-					o: o,
-					g: g,
-					t2: t + pn.a,
-					v: vp,
-					r: r,
-					f: 0
-				});
+				this.notetab.push(new Note(t, ch, n, o, g, t + pn.a, vp, r));
 		},
 		_setParamTarget: (p, v, t, d)=>{
 			if (d != 0)
@@ -1805,7 +1804,11 @@ function WebAudioTinySynthCore(target) {
 			this.getChmod(ch).connect(dest);
 		},
 		disconnectChmod: (ch, dest)=>{
-			this.getChmod(ch).disconnect(dest);
+			if (!dest)
+				return;
+			try {
+				this.getChmod(ch).disconnect(dest);
+			} catch (e) {}
 		},
 		_tsConv: (t)=>{
 			if (t == undefined || t <= 0) {
